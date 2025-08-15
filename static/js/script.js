@@ -5,10 +5,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- DOM Element References ---
     const searchInput = document.getElementById('search-input');
     const resultsContainer = document.getElementById('search-results-container');
-    const loadingEl = document.getElementById('search-loading');
-    const hiddenInputs = document.getElementById('hidden-inputs');
+    const hiddenInputsContainer = document.getElementById('hidden-inputs');
     const submitBtn = document.getElementById('submit-btn');
-    const form = document.getElementById('recommendation-form');
+    const recommendationForm = document.getElementById('recommendation-form');
 
     const favoriteContainers = {
         movie: document.getElementById('favorite-movies'),
@@ -18,156 +17,168 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- State Management ---
-    let debounceTimer = null;
-    const selectedItems = new Map();
-    let mediaFilter = 'all';
+    let debounceTimer;
+    const selections = new Map();
+    let abortController = null;
 
-    // --- Functions ---
-    function updateSubmitButton() {
-        const count = selectedItems.size;
+    // --- Core Functions ---
+    const updateSubmitButton = () => {
+        const count = selections.size;
         submitBtn.disabled = count < 3;
-        submitBtn.textContent = count < 3 ? `Select at least ${3 - count} more` : `Find recommendations (${count})`;
-    }
-
-    const debounce = (fn, ms) => (...args) => {
-        clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => fn(...args), ms);
+        if (count >= 50) {
+            submitBtn.textContent = 'Maximum reached (50)';
+            submitBtn.disabled = false;
+        } else if (count >= 3) {
+            submitBtn.textContent = `Find Recommendations (${count} selected)`;
+        } else {
+            const needed = 3 - count;
+            submitBtn.textContent = `Select ${needed} more favorite${needed > 1 ? 's' : ''}`;
+        }
     };
 
-    function displayResults(items) {
+    const fetchSearchResults = async (query) => {
+        if (abortController) {
+            abortController.abort(); // Cancel the previous request
+        }
+        abortController = new AbortController();
+
+        try {
+            const response = await fetch(`/search?query=${encodeURIComponent(query)}`, { signal: abortController.signal });
+            if (!response.ok) throw new Error('Network response was not ok');
+            const data = await response.json();
+            renderSearchResults(data);
+        } catch (error) {
+            if (error.name !== 'AbortError') {
+                console.error("Search fetch error:", error);
+                resultsContainer.innerHTML = `<div class="p-4 text-gray-400">Could not fetch results.</div>`;
+                resultsContainer.classList.remove('hidden');
+            }
+        }
+    };
+
+    const renderSearchResults = (items) => {
         resultsContainer.innerHTML = '';
         if (!items || items.length === 0) {
             resultsContainer.classList.add('hidden');
             return;
         }
 
-        let filteredItems = items;
-        if (mediaFilter !== 'all') {
-            filteredItems = items.filter(it => it.media_type === mediaFilter);
-        }
-
-        const topResult = filteredItems[0];
-        if (topResult) {
-            const banner = document.createElement('div');
-            banner.className = 'search-top-banner mb-3 rounded-md overflow-hidden relative';
-            banner.innerHTML = `
-                <img src="${topResult.banner_path || topResult.poster_path || 'https://placehold.co/800x200/111827/ffffff?text=No+Image'}" alt="${topResult.title || 'Top result'}" class="w-full h-36 object-cover">
-                <div class="p-3 bg-gradient-to-t from-black/80 to-transparent w-full text-white flex items-center justify-between absolute bottom-0 left-0 right-0">
-                    <div>
-                        <div class="text-lg font-semibold">${topResult.title || 'Untitled'}</div>
-                        <div class="text-sm text-gray-300">${(topResult.media_type || '').toUpperCase()} • ${(topResult.release_date || '').slice(0, 4) || 'N/A'}</div>
+        // Top Result Banner
+        const topResult = items[0];
+        if (topResult && topResult.banner_path) {
+            resultsContainer.innerHTML += `
+                <button type="button" class="top-result-banner" data-item='${JSON.stringify(topResult)}'>
+                    <img src="${topResult.banner_path}" alt="Backdrop for ${topResult.title}" class="top-result-img">
+                    <div class="top-result-overlay">
+                        <div>
+                            <div class="font-bold text-lg">${topResult.title}</div>
+                            <div class="text-sm text-gray-300">${(topResult.release_date || '').slice(0, 4)} • ${topResult.media_type.toUpperCase()}</div>
+                        </div>
+                        <span class="add-button">Add</span>
                     </div>
-                    <button type="button" class="p-2 rounded bg-indigo-600 hover:bg-indigo-500 text-white font-semibold">Add to favorites</button>
-                </div>
+                </button>
             `;
-            banner.querySelector('button').addEventListener('click', () => addSelectedItem(topResult));
-            resultsContainer.appendChild(banner);
         }
 
-        const list = document.createElement('div');
-        list.className = 'divide-y divide-gray-700';
-        filteredItems.forEach(item => {
-            const btn = document.createElement('button');
-            btn.type = 'button';
-            btn.className = 'search-result-item w-full text-left px-3 py-2 flex items-center gap-3';
-            btn.innerHTML = `
-                <img src="${item.poster_path || `https://placehold.co/80x120/1f2937/ffffff?text=${encodeURIComponent(item.title)}`}" alt="${item.title}" class="search-result-poster">
-                <div class="flex-1">
-                    <div class="font-medium">${item.title || 'Untitled'}</div>
-                    <div class="text-sm text-gray-400">${(item.media_type || '')} • ${(item.release_date || '').slice(0, 4) || ''}</div>
+        // List of other results, excluding the top one
+        const itemsHtml = items.slice(1).map(item => `
+            <button type="button" class="result-item" data-item='${JSON.stringify(item)}'>
+                <img src="${item.poster_path || 'https://placehold.co/80x120/1e293b/475569?text=?'}" alt="Poster" class="result-poster">
+                <div class="result-text">
+                    <div class="font-semibold">${item.title}</div>
+                    <div class="text-xs text-gray-400">${(item.release_date || '').slice(0, 4)} • ${item.media_type.toUpperCase()}</div>
                 </div>
-            `;
-            btn.addEventListener('click', () => addSelectedItem(item));
-            list.appendChild(btn);
-        });
+            </button>
+        `).join('');
 
-        resultsContainer.appendChild(list);
+        const listContainer = document.createElement('div');
+        listContainer.className = 'result-list';
+        listContainer.innerHTML = itemsHtml;
+        resultsContainer.appendChild(listContainer);
+        
         resultsContainer.classList.remove('hidden');
-    }
+    };
+    
+    const addItem = (item) => {
+        const itemId = `${item.media_type}-${item.id}`;
+        if (selections.has(itemId) || selections.size >= 50) return;
 
-    function addSelectedItem(item) {
-        const id = `${item.media_type}-${item.id}`;
-        if (selectedItems.has(id) || selectedItems.size >= 25) return;
-
-        selectedItems.set(id, item);
+        selections.set(itemId, item);
 
         const container = favoriteContainers[item.media_type];
         if (!container) return;
-
-        const card = document.createElement('div');
-        card.className = 'favorite-card';
-        card.id = `card-${id}`;
         
-        const posterPath = item.poster_path || `https://placehold.co/200x300/1f2937/ffffff?text=${encodeURIComponent(item.title)}`;
-        const year = (item.release_date || 'N/A').substring(0, 4);
-        const overview = item.overview || 'No description available.';
-
+        const card = document.createElement('div');
+        card.id = `card-${itemId}`;
+        card.className = 'favorite-card';
         card.innerHTML = `
-            <img src="${posterPath}" alt="Poster for ${item.title}" class="favorite-card-poster">
-            <div class="favorite-card-overlay">
-                <div class="favorite-card-content">
-                    <h4 class="favorite-card-title">${item.title}</h4>
-                    <p class="favorite-card-year">${year}</p>
-                    <p class="favorite-card-desc">${overview.substring(0, 70)}...</p>
-                </div>
-            </div>
-            <button type="button" class="remove-btn" title="Remove" aria-label="Remove ${item.title}">&times;</button>
+            <img src="${item.poster_path || 'https://placehold.co/200x300/1e293b/475569?text=?'}" alt="Poster" class="favorite-poster">
+            <button type="button" class="remove-btn" title="Remove">&times;</button>
         `;
 
-        card.querySelector('.remove-btn').addEventListener('click', () => {
-            selectedItems.delete(id);
-            card.remove();
-            document.getElementById(`hidden-${id}`).remove();
-            updateSubmitButton();
-        });
-
-        requestAnimationFrame(() => card.classList.add('fade-in'));
         container.appendChild(card);
+        // Trigger animation
+        requestAnimationFrame(() => card.classList.add('is-visible'));
 
-        const hidden = document.createElement('input');
-        hidden.type = 'hidden';
-        hidden.name = 'media_selection';
-        hidden.value = id;
-        hidden.id = `hidden-${id}`;
-        hiddenInputs.appendChild(hidden);
+        // Add hidden input for the form
+        hiddenInputsContainer.innerHTML += `<input type="hidden" name="media_selection" value="${itemId}" id="hidden-${itemId}">`;
 
-        resultsContainer.classList.add('hidden');
-        searchInput.value = '';
+        card.querySelector('.remove-btn').addEventListener('click', () => removeItem(itemId));
+
         updateSubmitButton();
-    }
+        searchInput.value = '';
+        resultsContainer.classList.add('hidden');
+        searchInput.focus();
+    };
 
-    const doSearch = debounce(async (q) => {
-        try {
-            loadingEl && loadingEl.classList.remove('hidden');
-            const res = await fetch(`/search?query=${encodeURIComponent(q)}`);
-            if (!res.ok) throw new Error('Search failed');
-            const data = await res.json();
-            displayResults(data);
-        } catch (err) {
-            console.error(err);
-            resultsContainer.innerHTML = `<div class="p-3 text-gray-400">No results</div>`;
-            resultsContainer.classList.remove('hidden');
-        } finally {
-            loadingEl && loadingEl.classList.add('hidden');
+    const removeItem = (itemId) => {
+        selections.delete(itemId);
+        
+        const card = document.getElementById(`card-${itemId}`);
+        const hiddenInput = document.getElementById(`hidden-${itemId}`);
+        
+        if (card) {
+            card.classList.remove('is-visible');
+            card.addEventListener('transitionend', () => card.remove(), { once: true });
         }
-    }, 200);
+        if (hiddenInput) hiddenInput.remove();
+        
+        updateSubmitButton();
+    };
 
-    searchInput.addEventListener('input', e => {
-        const q = e.target.value.trim();
-        if (q.length < 2) {
+
+    // --- Event Listeners ---
+    searchInput.addEventListener('input', (e) => {
+        clearTimeout(debounceTimer);
+        const query = e.target.value.trim();
+        if (query.length < 2) {
             resultsContainer.classList.add('hidden');
             return;
         }
-        doSearch(q);
-    });
-    
-    document.getElementById('media-toggle')?.querySelectorAll('.media-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            mediaFilter = btn.dataset.media;
-            const q = searchInput.value.trim();
-            if (q.length >= 2) doSearch(q);
-        });
+        debounceTimer = setTimeout(() => fetchSearchResults(query), 250);
     });
 
+    resultsContainer.addEventListener('click', (e) => {
+        const button = e.target.closest('button[data-item]');
+        if (button) {
+            const item = JSON.parse(button.dataset.item);
+            addItem(item);
+        }
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!searchInput.contains(e.target) && !resultsContainer.contains(e.target)) {
+            resultsContainer.classList.add('hidden');
+        }
+    });
+    
+    recommendationForm.addEventListener('submit', (e) => {
+        if (selections.size < 3) {
+            e.preventDefault();
+            alert('Please select at least 3 favorites to get recommendations.');
+        }
+    });
+
+    // --- Init ---
     updateSubmitButton();
 });
