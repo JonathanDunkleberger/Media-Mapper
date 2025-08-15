@@ -1,4 +1,4 @@
-/* --- Base Styles (from before) --- */
+/* --- Base Styles --- */
 body { font-family: 'Inter', sans-serif; background-color: #111827; }
 .card { background-color: #1f2937; border: 1px solid #374151; }
 .input-field { background-color: #374151; border: 1px solid #4b5563; color: #e5e7eb; }
@@ -20,16 +20,34 @@ body { font-family: 'Inter', sans-serif; background-color: #111827; }
     background-color: #374151;
 }
 .search-result-poster {
-    width: 40px;
-    height: 60px;
+    width: 56px;
+    height: 84px;
     object-fit: cover;
     border-radius: 4px;
     margin-right: 0.75rem;
     flex-shrink: 0;
 }
+
+/* Top suggestion styling */
+#top-suggestion-container { position: absolute; left: 0; right: 0; padding: 0.5rem; }
+.top-suggestion-card { display: flex; align-items: center; gap: 1rem; background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.35)); border-radius: 8px; padding: 0.75rem; }
+.top-suggestion-card img { border-radius: 6px; box-shadow: 0 8px 30px rgba(0,0,0,0.6); }
+
+/* Search top banner styling */
+.search-top-banner { position: relative; }
+.search-top-banner img { display: block; width: 100%; height: 9rem; object-fit: cover; }
+.search-top-banner > div { position: absolute; left: 0; right: 0; bottom: 0; }
 .search-result-text {
     overflow: hidden;
 }
+
+/* media toggle */
+.media-toggle { display: inline-flex; }
+.media-toggle { display: inline-flex; border-radius: 9999px; }
+.media-toggle .media-btn { background: transparent; border: none; cursor: pointer; color: #e5e7eb; padding: 6px 10px; border-radius: 9999px; transition: background-color 160ms ease, transform 120ms ease; }
+.media-toggle .media-btn:hover { background: rgba(255,255,255,0.03); transform: translateY(-1px); }
+.media-toggle .media-btn.active { background: linear-gradient(90deg,#6366f1,#4f46e5); color: white; box-shadow: 0 6px 18px rgba(79,70,229,0.24); }
+.media-toggle .media-btn:focus { outline: 2px solid rgba(79,70,229,0.2); }
 
 /* --- Favorite Card UI Overhaul --- */
 .favorites-grid {
@@ -38,11 +56,11 @@ body { font-family: 'Inter', sans-serif; background-color: #111827; }
     gap: 1rem;
     min-height: 160px;
 }
-.favorite-card { 
-    position: relative; 
+.favorite-card {
+    position: relative;
     border-radius: 8px;
     overflow: hidden;
-    aspect-ratio: 2 / 3; /* Maintain a movie poster aspect ratio */
+    aspect-ratio: 2 / 3;
     transform: scale(0.95);
     opacity: 0;
     transition: transform 0.3s ease, opacity 0.3s ease;
@@ -94,41 +112,28 @@ body { font-family: 'Inter', sans-serif; background-color: #111827; }
     overflow: hidden;
 }
 
-/* --- Remove Button (Slightly modified) --- */
-.remove-btn { 
-    position: absolute; 
-    top: 6px; 
-    right: 6px; 
+/* --- Remove Button --- */
+.remove-btn {
+    position: absolute;
+    top: 6px;
+    right: 6px;
     background-color: rgba(0, 0, 0, 0.6);
-    color: white; 
+    color: white;
     border-radius: 9999px;
-    width: 24px; 
-    height: 24px; 
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
-    font-weight: bold; 
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
     border: none;
-    cursor: pointer; 
+    cursor: pointer;
     opacity: 0;
     transform: scale(0.8);
     transition: opacity 0.2s ease, transform 0.2s ease;
     z-index: 10;
 }
-.favorite-card:hover .remove-btn { 
-    opacity: 1; 
+.favorite-card:hover .remove-btn {
+    opacity: 1;
     transform: scale(1);
 }
-
-/* Spinner for busy state */
-.spinner {
-    width: 28px;
-    height: 28px;
-    border: 3px solid rgba(255,255,255,0.12);
-    border-top-color: #4f46e5;
-    border-radius: 50%;
-    animation: spin 0.9s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-
-.search-loading { display: inline-flex; align-items: center; gap: 8px; color: #c7d2fe; }
