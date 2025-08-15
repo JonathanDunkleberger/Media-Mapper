@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Media Mapper</title>
+    <!-- Tailwind CSS for rapid UI development -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts for better typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Link to our external stylesheet -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="text-gray-200">
+
+    <div class="container mx-auto p-4 md:p-8 max-w-7xl">
+        <header class="text-center mb-10">
+            <h1 class="text-4xl md:text-5xl font-bold text-white">Media Mapper</h1>
+            <p class="text-lg text-gray-400 mt-2">Build your taste profile, then discover your next favorite.</p>
+        </header>
+
+        <!-- Input Section -->
+        {% if not recommendations %}
+        <div id="input-section" class="card p-6 md:p-8 rounded-lg shadow-lg">
+            <form id="recommendation-form" action="/recommend" method="POST" class="space-y-6">
+                
+                <div class="relative">
+                    <label for="search-input" class="block mb-2 text-lg font-medium text-gray-100">Step 1: Search and add your favorites (3-25)</label>
+                    <div class="flex items-center gap-3">
+                        <input type="text" id="search-input" class="flex-1 p-3 rounded-md input-field focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="e.g., The Crown, Dune, Baldur's Gate 3..." autocomplete="off">
+                        <div id="search-loading" class="search-loading hidden"><span class="spinner" aria-hidden="true"></span><span class="text-sm">Searching</span></div>
+                    </div>
+                    <div id="search-results-container" class="absolute z-10 w-full mt-1 bg-gray-800 border border-gray-700 rounded-md shadow-lg hidden"></div>
+                </div>
+
+                <div>
+                    <h2 class="block mb-3 text-lg font-medium text-gray-100">Step 2: Review your taste profile</h2>
+                    <!-- Updated grid to support 4 columns on large screens -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div class="card p-4 rounded-md">
+                            <h3 class="font-semibold text-indigo-400 mb-3">Favorite Movies</h3>
+                            <div id="favorite-movies" class="favorites-grid"></div>
+                        </div>
+                        <div class="card p-4 rounded-md">
+                            <h3 class="font-semibold text-indigo-400 mb-3">Favorite TV & Anime</h3>
+                            <div id="favorite-tv" class="favorites-grid"></div>
+                        </div>
+                        <div class="card p-4 rounded-md">
+                            <h3 class="font-semibold text-indigo-400 mb-3">Favorite Books</h3>
+                            <div id="favorite-book" class="favorites-grid"></div>
+                        </div>
+                        <!-- New card for Video Games -->
+                        <div class="card p-4 rounded-md">
+                            <h3 class="font-semibold text-indigo-400 mb-3">Favorite Video Games</h3>
+                            <div id="favorite-games" class="favorites-grid"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="hidden-inputs"></div>
+
+                <div>
+                    <label class="block mb-3 text-lg font-medium text-gray-100">Step 3: Find recommendations</label>
+                    <button id="submit-btn" type="submit" class="w-full p-4 rounded-md btn text-white font-semibold text-lg transition-colors" disabled>Select at least 3 favorites</button>
+                </div>
+            </form>
+        </div>
+        {% endif %}
+
+        <!-- Recommendation Results Section -->
+        {% if recommendations %}
+        <div id="results-section">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-3xl font-bold text-white">Your Recommendations</h2>
+                <a href="/" class="p-3 rounded-md btn-secondary text-white font-semibold transition-colors">Start Over</a>
+            </div>
+
+            {% for category, items in recommendations.items() if items %}
+                <div class="mb-10">
+                    <h3 class="text-2xl font-semibold text-indigo-400 mb-4 capitalize">{{ category.replace('_', ' ') }}</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+                        {% for item in items %}
+                        <div class="card rounded-lg overflow-hidden flex flex-col">
+                            {% set title = item.get('title') or item.get('name') or 'Untitled' %}
+                            {% set poster_path = item.get('poster_path') or item.get('image_url') %}
+                            {% set placeholder_url = 'https://placehold.co/400x600/1f2937/ffffff?text=' + (title|urlencode) %}
+                            {% set image_url = 'https://image.tmdb.org/t/p/w400' + poster_path if poster_path and not poster_path.startswith('http') else (poster_path or placeholder_url) %}
+                            
+                            <img src="{{ image_url }}" alt="Poster for {{ title }}" class="w-full h-auto object-cover" onerror="this.onerror=null;this.src='{{ placeholder_url }}';">
+                            
+                            <div class="p-4 flex flex-col flex-grow">
+                                <h4 class="font-bold text-lg flex-grow">{{ title }}</h4>
+                                <div class="flex items-center justify-between text-sm text-gray-400 my-2">
+                                    <span>{{ (item.get('release_date') or item.get('first_air_date') or 'N/A')[:4] }}</span>
+                                    <div class="flex items-center">
+                                        <svg class="w-4 h-4 text-yellow-400 mr-1" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                                        <span>{{ "%.1f"|format(item.get('vote_average', 0)) }}</span>
+                                    </div>
+                                </div>
+                                <p class="text-sm text-gray-300 h-20 overflow-hidden">{{ item.get('overview') or item.get('description') or 'No description available.' }}</p>
+                                {% if item.get('providers') %}
+                                <div class="mt-auto pt-3">
+                                    <p class="text-xs text-gray-500 mb-1">Where to Watch (US):</p>
+                                    <div class="flex flex-wrap gap-2">
+                                        {% for provider in item.providers | sort(attribute='display_priority') | slice(4) %}
+                                            <img src="https://image.tmdb.org/t/p/w92{{ provider.logo_path }}" alt="{{ provider.provider_name }}" title="{{ provider.provider_name }}" class="provider-logo">
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+    <script src="{{ url_for('static', filename='js/script.js') }}?v={{ cache_bust }}"></script>
+</body>
+</html>

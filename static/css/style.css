@@ -1,0 +1,134 @@
+/* --- Base Styles (from before) --- */
+body { font-family: 'Inter', sans-serif; background-color: #111827; }
+.card { background-color: #1f2937; border: 1px solid #374151; }
+.input-field { background-color: #374151; border: 1px solid #4b5563; color: #e5e7eb; }
+.btn { background-color: #4f46e5; }
+.btn:hover { background-color: #4338ca; }
+.btn:disabled { background-color: #374151; cursor: not-allowed; opacity: 0.6; }
+
+/* --- Search Results UI Upgrade --- */
+.search-result-item {
+    width: 100%;
+    padding: 0.75rem;
+    display: flex;
+    align-items: center;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+}
+.search-result-item:hover {
+    background-color: #374151;
+}
+.search-result-poster {
+    width: 40px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 4px;
+    margin-right: 0.75rem;
+    flex-shrink: 0;
+}
+.search-result-text {
+    overflow: hidden;
+}
+
+/* --- Favorite Card UI Overhaul --- */
+.favorites-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 1rem;
+    min-height: 160px;
+}
+.favorite-card { 
+    position: relative; 
+    border-radius: 8px;
+    overflow: hidden;
+    aspect-ratio: 2 / 3; /* Maintain a movie poster aspect ratio */
+    transform: scale(0.95);
+    opacity: 0;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+}
+.favorite-card.fade-in {
+    transform: scale(1);
+    opacity: 1;
+}
+.favorite-card-poster {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+.favorite-card:hover .favorite-card-poster {
+    transform: scale(1.1);
+}
+.favorite-card-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.9) 20%, transparent 60%);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 0.75rem;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+.favorite-card:hover .favorite-card-overlay {
+    opacity: 1;
+}
+.favorite-card-title {
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: white;
+    line-height: 1.2;
+}
+.favorite-card-year {
+    font-size: 0.75rem;
+    color: #9ca3af;
+}
+.favorite-card-desc {
+    font-size: 0.75rem;
+    color: #d1d5db;
+    margin-top: 4px;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* --- Remove Button (Slightly modified) --- */
+.remove-btn { 
+    position: absolute; 
+    top: 6px; 
+    right: 6px; 
+    background-color: rgba(0, 0, 0, 0.6);
+    color: white; 
+    border-radius: 9999px;
+    width: 24px; 
+    height: 24px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    font-weight: bold; 
+    border: none;
+    cursor: pointer; 
+    opacity: 0;
+    transform: scale(0.8);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    z-index: 10;
+}
+.favorite-card:hover .remove-btn { 
+    opacity: 1; 
+    transform: scale(1);
+}
+
+/* Spinner for busy state */
+.spinner {
+    width: 28px;
+    height: 28px;
+    border: 3px solid rgba(255,255,255,0.12);
+    border-top-color: #4f46e5;
+    border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.search-loading { display: inline-flex; align-items: center; gap: 8px; color: #c7d2fe; }

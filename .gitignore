@@ -1,0 +1,17 @@
+# Environment files
+.env
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Virtual environments
+venv/
+.env/
+
+# Editor directories
+.vscode/
+
+# Mac, Windows trash
+.DS_Store
+Thumbs.db
