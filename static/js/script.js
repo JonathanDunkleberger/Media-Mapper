@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const topResult = filteredItems[0];
         if (topResult) {
             const banner = document.createElement('div');
-            banner.className = 'search-top-banner mb-3 rounded-md overflow-hidden relative';
+            banner.className = 'search-top-banner mb-3 rounded-md overflow-hidden relative cursor-pointer';
             banner.innerHTML = `
                 <img src="${topResult.banner_path || topResult.poster_path || 'https://placehold.co/800x200/111827/ffffff?text=No+Image'}" alt="${topResult.title || 'Top result'}" class="w-full h-36 object-cover">
                 <div class="p-3 bg-gradient-to-t from-black/80 to-transparent w-full text-white flex items-center justify-between absolute bottom-0 left-0 right-0">
@@ -57,27 +57,59 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div class="text-lg font-semibold">${topResult.title || 'Untitled'}</div>
                         <div class="text-sm text-gray-300">${(topResult.media_type || '').toUpperCase()} • ${(topResult.release_date || '').slice(0, 4) || 'N/A'}</div>
                     </div>
-                    <button type="button" class="p-2 rounded bg-indigo-600 hover:bg-indigo-500 text-white font-semibold">Add to favorites</button>
+                    <div class="flex space-x-2">
+                        <button type="button" class="add-to-favorites-banner px-3 py-2 rounded bg-indigo-600 hover:bg-indigo-500 text-white font-semibold">Add</button>
+                        <button type="button" class="view-details-banner px-3 py-2 rounded bg-gray-600 hover:bg-gray-500 text-white font-semibold">Details</button>
+                    </div>
                 </div>
             `;
-            banner.querySelector('button').addEventListener('click', () => addSelectedItem(topResult));
+            banner.querySelector('.add-to-favorites-banner').addEventListener('click', (e) => {
+                e.stopPropagation();
+                addSelectedItem(topResult);
+            });
+            banner.querySelector('.view-details-banner').addEventListener('click', (e) => {
+                e.stopPropagation();
+                window.location.href = `/details/${topResult.media_type}/${topResult.id}`;
+            });
+            // Make the whole banner clickable to view details
+            banner.addEventListener('click', () => {
+                window.location.href = `/details/${topResult.media_type}/${topResult.id}`;
+            });
             resultsContainer.appendChild(banner);
         }
 
         const list = document.createElement('div');
         list.className = 'divide-y divide-gray-700';
         filteredItems.forEach(item => {
-            const btn = document.createElement('button');
-            btn.type = 'button';
-            btn.className = 'search-result-item w-full text-left px-3 py-2 flex items-center gap-3';
+            const btn = document.createElement('div');
+            btn.className = 'search-result-item w-full text-left px-3 py-2 flex items-center gap-3 cursor-pointer';
             btn.innerHTML = `
                 <img src="${item.poster_path || `https://placehold.co/80x120/1f2937/ffffff?text=${encodeURIComponent(item.title)}`}" alt="${item.title}" class="search-result-poster">
                 <div class="flex-1">
                     <div class="font-medium">${item.title || 'Untitled'}</div>
                     <div class="text-sm text-gray-400">${(item.media_type || '')} • ${(item.release_date || '').slice(0, 4) || ''}</div>
                 </div>
+                <div class="flex items-center space-x-2">
+                    <button type="button" class="add-to-favorites px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white text-sm rounded-md font-medium" title="Add to favorites">
+                        Add
+                    </button>
+                    <button type="button" class="view-details px-3 py-1 bg-gray-600 hover:bg-gray-500 text-white text-sm rounded-md font-medium" title="View details">
+                        Details
+                    </button>
+                </div>
             `;
-            btn.addEventListener('click', () => addSelectedItem(item));
+            btn.querySelector('.add-to-favorites').addEventListener('click', (e) => {
+                e.stopPropagation();
+                addSelectedItem(item);
+            });
+            btn.querySelector('.view-details').addEventListener('click', (e) => {
+                e.stopPropagation();
+                window.location.href = `/details/${item.media_type}/${item.id}`;
+            });
+            // Make the whole item clickable to view details
+            btn.addEventListener('click', () => {
+                window.location.href = `/details/${item.media_type}/${item.id}`;
+            });
             list.appendChild(btn);
         });
 
@@ -114,7 +146,17 @@ document.addEventListener('DOMContentLoaded', () => {
             <button type="button" class="remove-btn" title="Remove" aria-label="Remove ${item.title}">&times;</button>
         `;
 
-        card.querySelector('.remove-btn').addEventListener('click', () => {
+        // Make card clickable to view details
+        card.addEventListener('click', (e) => {
+            // Don't navigate if clicking the remove button
+            if (!e.target.classList.contains('remove-btn')) {
+                window.location.href = `/details/${item.media_type}/${item.id}`;
+            }
+        });
+        card.style.cursor = 'pointer';
+
+        card.querySelector('.remove-btn').addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent card click when removing
             selectedItems.delete(id);
             card.remove();
             document.getElementById(`hidden-${id}`).remove();

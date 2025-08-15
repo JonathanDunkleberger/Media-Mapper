@@ -1,6 +1,7 @@
 import os
 import requests
 import re
+import time
 from urllib.parse import quote_plus
 import logging
 from flask import Flask, render_template, request, jsonify
@@ -26,14 +27,102 @@ class Config:
 
 # --- Mock Data for Games (Workaround for RAWG API) ---
 MOCK_GAMES = [
-    {'id': 3498, 'media_type': 'game', 'title': 'Grand Theft Auto V', 'poster_path': 'https://media.rawg.io/media/games/456/456dea5e1c7e3cd07060c14e96612001.jpg', 'release_date': '2013-09-17', 'vote_average': 4.47, 'overview': 'An action-adventure game played from either a third-person or first-person perspective.'},
-    {'id': 3328, 'media_type': 'game', 'title': 'The Witcher 3: Wild Hunt', 'poster_path': 'https://media.rawg.io/media/games/618/618c2031a07bbff6b4f611f10b6bcdbc.jpg', 'release_date': '2015-05-18', 'vote_average': 4.66, 'overview': 'An action role-playing game with a third-person perspective, set in a fantasy universe.'},
-    {'id': 4200, 'media_type': 'game', 'title': 'Portal 2', 'poster_path': 'https://media.rawg.io/media/games/328/3283617cb7d75d67257fc58339188742.jpg', 'release_date': '2011-04-18', 'vote_average': 4.61, 'overview': 'A puzzle-platform game played from a first-person perspective.'},
-    {'id': 5679, 'media_type': 'game', 'title': 'The Elder Scrolls V: Skyrim', 'poster_path': 'https://media.rawg.io/media/games/7cf/7cfc9220b401b7a300e409e539c9afd6.jpg', 'release_date': '2011-11-11', 'vote_average': 4.42, 'overview': 'An action role-playing game, playable from either a first or third-person perspective.'},
-    {'id': 1030, 'media_type': 'game', 'title': "Baldur's Gate 3", 'poster_path': 'https://media.rawg.io/media/games/26d/26d4437715bee602f742a9b12c5b0892.jpg', 'release_date': '2023-08-03', 'vote_average': 4.5, 'overview': 'An epic RPG set in the world of Dungeons & Dragons.'},
-    {'id': 22509, 'media_type': 'game', 'title': 'Minecraft', 'poster_path': 'https://media.rawg.io/media/games/b4e/b4e4c73d5aa4ec66bbf75375c4847a2b.jpg', 'release_date': '2011-11-18', 'vote_average': 4.43, 'overview': 'A sandbox video game where players can build and explore virtual worlds made of blocks.'},
-    {'id': 4291, 'media_type': 'game', 'title': 'Cyberpunk 2077', 'poster_path': 'https://media.rawg.io/media/games/26d/26d4437715bee602f742a9b12c5b0892.jpg', 'release_date': '2020-12-10', 'vote_average': 4.1, 'overview': 'An open-world, action-adventure story set in Night City, a megalopolis obsessed with power, glamour and body modification.'},
-    {'id': 28, 'media_type': 'game', 'title': 'Red Dead Redemption 2', 'poster_path': 'https://media.rawg.io/media/games/511/5118aff5091cb3efec399c808f8c598f.jpg', 'release_date': '2018-10-26', 'vote_average': 4.58, 'overview': 'A Western-themed action-adventure game set in an open world environment.'}
+    {
+        'id': 3498, 'media_type': 'game', 'title': 'Grand Theft Auto V', 
+        'poster_path': 'https://media.rawg.io/media/games/456/456dea5e1c7e3cd07060c14e96612001.jpg', 
+        'release_date': '2013-09-17', 'vote_average': 4.47, 'genre': 'Action',
+        'overview': 'An action-adventure game played from either a third-person or first-person perspective.',
+        'howLongToBeat': {'main': '31.5 hours', 'extra': '78 hours', 'completionist': '80 hours'},
+        'tasteProfile': {
+            'storyComplexity': 7, 'combatDifficulty': 6, 'grindFactor': 4, 'explorationFocus': 8,
+            'playerChoiceMatters': 6, 'artStyle': 9, 'replayValue': 9, 'learningCurve': 5,
+            'cooperativePlay': 8, 'competitivePlay': 9, 'narrativeFocus': 7, 'techComplexity': 6
+        }
+    },
+    {
+        'id': 3328, 'media_type': 'game', 'title': 'The Witcher 3: Wild Hunt', 
+        'poster_path': 'https://media.rawg.io/media/games/618/618c2031a07bbff6b4f611f10b6bcdbc.jpg', 
+        'release_date': '2015-05-18', 'vote_average': 4.66, 'genre': 'RPG',
+        'overview': 'An action role-playing game with a third-person perspective, set in a fantasy universe.',
+        'howLongToBeat': {'main': '51.5 hours', 'extra': '103 hours', 'completionist': '173 hours'},
+        'tasteProfile': {
+            'storyComplexity': 9, 'combatDifficulty': 7, 'grindFactor': 6, 'explorationFocus': 9,
+            'playerChoiceMatters': 9, 'artStyle': 10, 'replayValue': 8, 'learningCurve': 7,
+            'cooperativePlay': 1, 'competitivePlay': 1, 'narrativeFocus': 10, 'techComplexity': 7
+        }
+    },
+    {
+        'id': 4200, 'media_type': 'game', 'title': 'Portal 2', 
+        'poster_path': 'https://media.rawg.io/media/games/328/3283617cb7d75d67257fc58339188742.jpg', 
+        'release_date': '2011-04-18', 'vote_average': 4.61, 'genre': 'Puzzle',
+        'overview': 'A puzzle-platform game played from a first-person perspective.',
+        'howLongToBeat': {'main': '8.5 hours', 'extra': '11 hours', 'completionist': '21 hours'},
+        'tasteProfile': {
+            'storyComplexity': 8, 'combatDifficulty': 2, 'grindFactor': 1, 'explorationFocus': 6,
+            'playerChoiceMatters': 4, 'artStyle': 9, 'replayValue': 7, 'learningCurve': 6,
+            'cooperativePlay': 8, 'competitivePlay': 3, 'narrativeFocus': 8, 'techComplexity': 8
+        }
+    },
+    {
+        'id': 5679, 'media_type': 'game', 'title': 'The Elder Scrolls V: Skyrim', 
+        'poster_path': 'https://media.rawg.io/media/games/7cf/7cfc9220b401b7a300e409e539c9afd6.jpg', 
+        'release_date': '2011-11-11', 'vote_average': 4.42, 'genre': 'RPG',
+        'overview': 'An action role-playing game, playable from either a first or third-person perspective.',
+        'howLongToBeat': {'main': '34 hours', 'extra': '107 hours', 'completionist': '232 hours'},
+        'tasteProfile': {
+            'storyComplexity': 6, 'combatDifficulty': 6, 'grindFactor': 7, 'explorationFocus': 10,
+            'playerChoiceMatters': 8, 'artStyle': 8, 'replayValue': 10, 'learningCurve': 6,
+            'cooperativePlay': 1, 'competitivePlay': 1, 'narrativeFocus': 7, 'techComplexity': 5
+        }
+    },
+    {
+        'id': 1030, 'media_type': 'game', 'title': "Baldur's Gate 3", 
+        'poster_path': 'https://media.rawg.io/media/games/26d/26d4437715bee602f742a9b12c5b0892.jpg', 
+        'release_date': '2023-08-03', 'vote_average': 4.5, 'genre': 'RPG',
+        'overview': 'An epic RPG set in the world of Dungeons & Dragons.',
+        'howLongToBeat': {'main': '75 hours', 'extra': '101 hours', 'completionist': '140 hours'},
+        'tasteProfile': {
+            'storyComplexity': 10, 'combatDifficulty': 8, 'grindFactor': 5, 'explorationFocus': 9,
+            'playerChoiceMatters': 10, 'artStyle': 9, 'replayValue': 9, 'learningCurve': 8,
+            'cooperativePlay': 9, 'competitivePlay': 2, 'narrativeFocus': 10, 'techComplexity': 8
+        }
+    },
+    {
+        'id': 22509, 'media_type': 'game', 'title': 'Minecraft', 
+        'poster_path': 'https://media.rawg.io/media/games/b4e/b4e4c73d5aa4ec66bbf75375c4847a2b.jpg', 
+        'release_date': '2011-11-18', 'vote_average': 4.43, 'genre': 'Sandbox',
+        'overview': 'A sandbox video game where players can build and explore virtual worlds made of blocks.',
+        'howLongToBeat': {'main': '∞ hours', 'extra': '∞ hours', 'completionist': '∞ hours'},
+        'tasteProfile': {
+            'storyComplexity': 2, 'combatDifficulty': 4, 'grindFactor': 6, 'explorationFocus': 10,
+            'playerChoiceMatters': 10, 'artStyle': 7, 'replayValue': 10, 'learningCurve': 4,
+            'cooperativePlay': 9, 'competitivePlay': 7, 'narrativeFocus': 1, 'techComplexity': 5
+        }
+    },
+    {
+        'id': 4291, 'media_type': 'game', 'title': 'Cyberpunk 2077', 
+        'poster_path': 'https://media.rawg.io/media/games/511/5118aff5091cb3efec399c808f8c598f.jpg', 
+        'release_date': '2020-12-10', 'vote_average': 4.1, 'genre': 'RPG',
+        'overview': 'An open-world, action-adventure story set in Night City, a megalopolis obsessed with power, glamour and body modification.',
+        'howLongToBeat': {'main': '24.5 hours', 'extra': '60.5 hours', 'completionist': '103 hours'},
+        'tasteProfile': {
+            'storyComplexity': 8, 'combatDifficulty': 7, 'grindFactor': 5, 'explorationFocus': 8,
+            'playerChoiceMatters': 8, 'artStyle': 10, 'replayValue': 7, 'learningCurve': 7,
+            'cooperativePlay': 1, 'competitivePlay': 1, 'narrativeFocus': 9, 'techComplexity': 8
+        }
+    },
+    {
+        'id': 28, 'media_type': 'game', 'title': 'Red Dead Redemption 2', 
+        'poster_path': 'https://media.rawg.io/media/games/511/5118aff5091cb3efec399c808f8c598f.jpg', 
+        'release_date': '2018-10-26', 'vote_average': 4.58, 'genre': 'Action',
+        'overview': 'A Western-themed action-adventure game set in an open world environment.',
+        'howLongToBeat': {'main': '50 hours', 'extra': '79 hours', 'completionist': '174 hours'},
+        'tasteProfile': {
+            'storyComplexity': 9, 'combatDifficulty': 6, 'grindFactor': 7, 'explorationFocus': 9,
+            'playerChoiceMatters': 7, 'artStyle': 10, 'replayValue': 8, 'learningCurve': 6,
+            'cooperativePlay': 6, 'competitivePlay': 8, 'narrativeFocus': 9, 'techComplexity': 6
+        }
+    }
 ]
 
 PRIORITY_GAMES_RAW = [ "Cyberpunk 2077", "Baldur's Gate 3", "Minecraft", "The Witcher 3: Wild Hunt", "Portal 2", "Skyrim", "Grand Theft Auto V", "Red Dead Redemption 2", "God of War", "Call of Duty" ]
@@ -165,6 +254,45 @@ def search():
     combined.sort(key=lambda x: (x.get('_exact_match', 0), x.get('_token_match', 0), x.get('_priority_boost', 0), x.get('_media_pri_adj', 0), x.get('_prefix_match', 0), x.get('_score', 0)), reverse=True)
     
     return jsonify(combined[:12])
+
+@app.route('/details/<media_type>/<media_id>')
+def details(media_type, media_id):
+    """Serve detailed media information for the premium details dashboard."""
+    
+    # First try to get data from MOCK_GAMES if it's a game
+    if media_type == 'game':
+        try:
+            media_id_int = int(media_id)
+        except ValueError:
+            media_id_int = None
+            
+        for game in MOCK_GAMES:
+            if game.get('id') == media_id_int:
+                # Add cache_bust for JS files
+                cache_bust = int(time.time())
+                return render_template('details.html', media=game, cache_bust=cache_bust)
+    
+    # For other media types or if game not found in MOCK_GAMES, try API resolution
+    details_data = _resolve_seed_details(media_type, media_id)
+    
+    if not details_data:
+        # Return 404 if no data found
+        return render_template('index.html', error=f"Media not found: {media_type} {media_id}"), 404
+    
+    # Create a basic media object for non-game items
+    media = {
+        'id': media_id,
+        'media_type': media_type,
+        'title': details_data.get('title', 'Unknown Title'),
+        'poster_path': details_data.get('poster_path'),
+        'overview': details_data.get('overview', 'No description available.'),
+        'release_date': '',
+        'vote_average': 0,
+        'genre': media_type.title()
+    }
+    
+    cache_bust = int(time.time())
+    return render_template('details.html', media=media, cache_bust=cache_bust)
 
 @app.route('/recommend', methods=['POST'])
 def recommend():
