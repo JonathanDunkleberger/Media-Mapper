@@ -207,6 +207,69 @@ def _normalize_title(s: str) -> str:
     s = re.sub(r"\b(the|a|an)\b", '', s)
     return ' '.join(s.split()).strip()
 
+def _resolve_seed_details(media_type, media_id):
+    """Try to resolve media details from APIs or return basic info."""
+    try:
+        # For games, check if we missed it in MOCK_GAMES
+        if media_type == 'game':
+            # Try RAWG API if available
+            if Config.RAWG_API_KEY:
+                endpoint = f"{Config.RAWG_API_URL}/games/{media_id}"
+                params = {'key': Config.RAWG_API_KEY}
+                data = make_request(endpoint, params, 'RAWG Game Detail')
+                if data:
+                    return {
+                        'title': data.get('name', f'Game {media_id}'),
+                        'poster_path': data.get('background_image'),
+                        'overview': data.get('description_raw') or data.get('description') or 'No description available.'
+                    }
+            # Fallback for games
+            return {
+                'title': f'Game {media_id}',
+                'poster_path': '/static/images/game-placeholder.svg',
+                'overview': 'Game details not available.'
+            }
+        
+        # For movies/TV, try TMDb API
+        if media_type in ['movie', 'tv'] and Config.TMDB_API_KEY:
+            endpoint = f"{Config.TMDB_API_URL}/{media_type}/{media_id}"
+            params = {'api_key': Config.TMDB_API_KEY}
+            data = make_request(endpoint, params, 'TMDb Detail')
+            if data:
+                title = data.get('title') or data.get('name', f'{media_type.title()} {media_id}')
+                poster = data.get('poster_path')
+                if poster and not poster.startswith('http'):
+                    poster = f"https://image.tmdb.org/t/p/w400{poster}"
+                return {
+                    'title': title,
+                    'poster_path': poster,
+                    'overview': data.get('overview', 'No description available.')
+                }
+        
+        # For books, try Google Books API
+        if media_type == 'book' and Config.GOOGLE_BOOKS_API_KEY:
+            endpoint = f"{Config.GOOGLE_BOOKS_API_URL}/{media_id}"
+            params = {'key': Config.GOOGLE_BOOKS_API_KEY}
+            data = make_request(endpoint, params, 'Google Books Detail')
+            if data:
+                vol_info = data.get('volumeInfo', {})
+                return {
+                    'title': vol_info.get('title', f'Book {media_id}'),
+                    'poster_path': vol_info.get('imageLinks', {}).get('thumbnail'),
+                    'overview': vol_info.get('description', 'No description available.')
+                }
+        
+        # Generic fallback
+        return {
+            'title': f'{media_type.title()} {media_id}',
+            'poster_path': None,
+            'overview': 'Details not available.'
+        }
+        
+    except Exception as e:
+        logging.error(f"Error resolving seed details: {e}")
+        return None
+
 # --- Routes ---
 @app.route('/')
 def index():
