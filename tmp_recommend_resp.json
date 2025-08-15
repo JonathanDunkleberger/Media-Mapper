@@ -1,0 +1,26 @@
+﻿{
+    "recommendations":  [
+                            {
+                                "id":  "rec-1",
+                                "media_type":  "game",
+                                "overview":  "An open-world action-adventure RPG set in Night City.",
+                                "poster_path":  "/static/images/cyberpunk2077.svg",
+                                "title":  "Cyberpunk 2077"
+                            },
+                            {
+                                "id":  "rec-2",
+                                "media_type":  "movie",
+                                "overview":  "The young rookie criminal V gets captured by mobsters during a mission. Now his client, Johnny Silverhand has to step in and complete the mission, rescuing Alt Cunningham himself. A big fight and search begins.",
+                                "poster_path":  "https://image.tmdb.org/t/p/w400/x865gFd84x8lWuU55FONLuKFKIV.jpg",
+                                "title":  "Cyberpunk 2077: Phoenix Program"
+                            },
+                            {
+                                "id":  "rec-3",
+                                "media_type":  "game",
+                                "overview":  "A sandbox game about placing blocks, crafting, and exploration.",
+                                "poster_path":  "/static/images/minecraft.svg",
+                                "title":  "Minecraft"
+                            }
+                        ],
+    "seed_count":  3
+}
