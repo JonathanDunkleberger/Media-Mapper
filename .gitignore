@@ -15,3 +15,4 @@ venv/
 # Mac, Windows trash
 .DS_Store
 Thumbs.db
+static/cache/
