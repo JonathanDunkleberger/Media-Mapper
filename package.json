@@ -1,0 +1,11 @@
+{
+  "name": "kuratorr",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"pnpm --filter backend dev\" \"pnpm --filter frontend dev\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.0"
+  }
+}
