@@ -580,7 +580,8 @@ app.post('/api/recommend', async (req, res) => {
     // --- 5. Image Enrichment Phase 2 (server-side) ---
     // Step 1 (above): LLM produced only minimal structured list (no images).
     // Step 2 (here): We fetch authoritative images from trusted APIs (TMDB, IGDB, Google Books) in parallel.
-    const disallowedHosts = ['via.placeholder.com','placehold.co','placehold.it','dummyimage.com'];
+  // Updated: allow our placeholder host so categories with only fallback images still render
+  const disallowedHosts = ['placehold.co','placehold.it','dummyimage.com'];
     const whitelistNoExtHosts = ['books.googleusercontent.com','lh3.googleusercontent.com','image.tmdb.org','images.igdb.com','media.igdb.com'];
     function hasValidImage(u) {
       if (!u) return false;
