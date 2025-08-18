@@ -9,8 +9,7 @@
     "lint": "next lint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "approve-builds": "pnpm install --ignore-scripts=false",
-    "postinstall": "pnpm rebuild"
+  "approve-builds": "pnpm install --ignore-scripts=false"
   },
   "dependencies": {
     "@algolia/autocomplete-js": "^1.19.2",
