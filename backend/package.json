@@ -6,7 +6,8 @@
     "dev": "nodemon index.js",
     "populate-search": "node scripts/populateAlgolia.js",
   "db:seed:movies": "node scripts/seed-movies.js",
-  "db:seed:games": "node scripts/seed-games.js"
+  "db:seed:games": "node scripts/seed-games.js",
+  "db:seed:books": "node scripts/seed-books.js"
   },
   "license": "ISC",
   "dependencies": {
