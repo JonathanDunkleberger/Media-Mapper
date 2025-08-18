@@ -629,7 +629,42 @@ app.post('/api/media/normalize', async (req, res) => {
       }
     } catch (e) { console.warn('Normalization detail fetch failed', title, type, e.message || e); }
     if (!result) return res.status(404).json({ error: 'Unable to resolve media item' });
+    // --- Fallback image enrichment (Task 2) ---
+    async function fillMissingImage(r) {
+      if (r.cover_image_url) return r;
+      try {
+        if (r.type === 'game') {
+          const alts = await searchIgdb(r.title || title);
+          const alt = alts.find(a => a.cover_image_url);
+          if (alt) r.cover_image_url = alt.cover_image_url;
+        } else if (r.type === 'book') {
+          const alts = await searchBooks(r.title || title);
+            const alt = alts.find(a => a.cover_image_url);
+            if (alt) r.cover_image_url = alt.cover_image_url;
+        } else if (r.type === 'tv') {
+          const alts = await searchTmdb(r.title || title, 'tv');
+          const alt = alts.find(a => a.cover_image_url || a.poster_path);
+          if (alt) r.cover_image_url = alt.cover_image_url || alt.poster_path;
+        } else if (r.type === 'movie') {
+          const alts = await searchTmdb(r.title || title, 'movie');
+          const alt = alts.find(a => a.cover_image_url || a.poster_path);
+          if (alt) r.cover_image_url = alt.cover_image_url || alt.poster_path;
+        }
+      } catch (e) {
+        console.warn('Fallback image enrichment failed', r.title || title, r.type, e.message || e);
+      }
+      if (!r.cover_image_url) {
+        // Final guaranteed placeholder per type (simple text placeholder service)
+        const label = encodeURIComponent((r.type || 'media').toUpperCase());
+        r.cover_image_url = `https://via.placeholder.com/300x450.png?text=${label}`;
+      }
+      return r;
+    }
     result.cover_image_url = ensureHttps(result.cover_image_url || result.poster_path || result.image_url || '');
+    if (!result.cover_image_url) {
+      await fillMissingImage(result);
+      result.cover_image_url = ensureHttps(result.cover_image_url);
+    }
     cacheSet(result.type || type, result.external_id || result.id, result.title || title, result);
     return res.json({ success: true, item: result });
   } catch (e) { console.error('Normalize endpoint error', e); return res.status(500).json({ error: 'normalize failed' }); }
