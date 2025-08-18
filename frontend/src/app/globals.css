@@ -58,3 +58,18 @@ body {
 /* Utility gradient for overlays */
 .overlay-gradient { background: var(--xprime-gradient-overlay); }
 
+/* Full-bleed section pattern for carousels */
+.full-bleed-section {
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+}
+
+/* Inner constrained wrapper */
+.content-wrapper {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding-left: 2rem;
+  padding-right: 2rem;
+}
+

@@ -143,24 +143,55 @@ export default function Home() {
               (recommendations.books && recommendations.books.length)
             )
           ) && (
-            <div className="w-full">
-              <MediaCarousel title="Trending Games" items={popularGames} />
-              <MediaCarousel title="Popular Movies" items={popularMovies} />
-              <MediaCarousel title="Top TV Shows" items={popularTv} />
-              <MediaCarousel title="Popular Books" items={popularBooks} />
-            </div>
+            <>
+              <section className="full-bleed-section py-4">
+                <div className="content-wrapper">
+                  <MediaCarousel title="Trending Games" items={popularGames} />
+                </div>
+              </section>
+              <section className="full-bleed-section py-4">
+                <div className="content-wrapper">
+                  <MediaCarousel title="Popular Movies" items={popularMovies} />
+                </div>
+              </section>
+              <section className="full-bleed-section py-4">
+                <div className="content-wrapper">
+                  <MediaCarousel title="Top TV Shows" items={popularTv} />
+                </div>
+              </section>
+              <section className="full-bleed-section py-4">
+                <div className="content-wrapper">
+                  <MediaCarousel title="Popular Books" items={popularBooks} />
+                </div>
+              </section>
+            </>
           )}
         </div>
         {/* Recommendations */}
         {recommendations && (
-          <div className="w-full mt-12 space-y-10">
-            {/* Render all four sections in fixed order to keep layout consistent; individual carousels hide internally if empty */}
-            <MediaCarousel title="Recommended Games" items={recommendations.games || []} />
-            <MediaCarousel title="Recommended Movies" items={recommendations.movies || []} />
-            <MediaCarousel title="Recommended TV Shows" items={recommendations.tv || []} />
-            <MediaCarousel title="Recommended Books" items={recommendations.books || []} />
+          <div className="w-full mt-12 space-y-4">
+            <section className="full-bleed-section py-4">
+              <div className="content-wrapper">
+                <MediaCarousel title="Recommended Games" items={recommendations.games || []} />
+              </div>
+            </section>
+            <section className="full-bleed-section py-4">
+              <div className="content-wrapper">
+                <MediaCarousel title="Recommended Movies" items={recommendations.movies || []} />
+              </div>
+            </section>
+            <section className="full-bleed-section py-4">
+              <div className="content-wrapper">
+                <MediaCarousel title="Recommended TV Shows" items={recommendations.tv || []} />
+              </div>
+            </section>
+            <section className="full-bleed-section py-4">
+              <div className="content-wrapper">
+                <MediaCarousel title="Recommended Books" items={recommendations.books || []} />
+              </div>
+            </section>
             {(!recommendations.games?.length && !recommendations.movies?.length && !recommendations.tv?.length && !recommendations.books?.length) && (
-              <div className="text-center text-sm text-gray-400">No recommendations returned. Try adding more varied favorites.</div>
+              <div className="text-center text-sm text-gray-400 content-wrapper">No recommendations returned. Try adding more varied favorites.</div>
             )}
           </div>
         )}
