@@ -1,5 +1,10 @@
-import dynamic from 'next/dynamic';
-export { default } from './GlobalMapView';
+import GlobalMapViewLoader from './GlobalMapViewLoader';
 
-// SSR-safe dynamic import for react-leaflet (avoids Next.js SSR issues)
-export const GlobalMapViewDynamic = dynamic(() => import('./GlobalMapView'), { ssr: false });
+export default function GlobalMapPage() {
+	return (
+		<div>
+			<h1>Global Media Map</h1>
+			<GlobalMapViewLoader />
+		</div>
+	);
+}
