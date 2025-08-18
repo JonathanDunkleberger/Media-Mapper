@@ -2,6 +2,7 @@
 
 'use client';
 import React, { useState, useCallback, useMemo } from 'react';
+import { FaHeart } from 'react-icons/fa';
 import Link from 'next/link';
 import type { KnownMedia } from '../types/media';
 import { isMovie, isTV, isBook, isGame } from '../types/media';
@@ -10,6 +11,24 @@ import { getImageUrl, getTitle, getId } from '../utils/mediaHelpers';
 type MediaCardProps = {
   item: KnownMedia;
 };
+
+// Simple local favorite state (for demo; replace with persistent storage as needed)
+function FavoriteButton({ id }: { id: string | number }) {
+  const [isFavorite, setIsFavorite] = useState(false);
+  return (
+    <button
+      onClick={e => {
+        e.preventDefault();
+        setIsFavorite(f => !f);
+      }}
+      aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+      className={isFavorite ? 'text-red-500' : 'text-gray-400'}
+      style={{ position: 'absolute', top: 8, right: 8, zIndex: 20, background: 'none', border: 'none' }}
+    >
+      <FaHeart />
+    </button>
+  );
+}
 
 export function MediaCard({ item }: MediaCardProps) {
   const initialImg = getImageUrl(item) ?? '';
@@ -46,7 +65,8 @@ export function MediaCard({ item }: MediaCardProps) {
       tabIndex={0}
     >
       <div className="relative rounded-xl overflow-hidden bg-[var(--xprime-surface)] ring-1 ring-[color-mix(in_oklab,var(--xprime-purple)_35%,#1f153a)] shadow-sm hover:shadow-lg hover:ring-[var(--xprime-purple)] transition-all duration-300">
-  <div className="relative w-full" style={{ aspectRatio: aspectRatio ? aspectRatio : '2 / 3' }}>
+        <div className="relative w-full" style={{ aspectRatio: aspectRatio ? aspectRatio : '2 / 3' }}>
+          <FavoriteButton id={id ?? title} />
           {imgSrc ? (
             <img
               src={imgSrc}

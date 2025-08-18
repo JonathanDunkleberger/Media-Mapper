@@ -85,6 +85,9 @@ importers:
       algoliasearch:
         specifier: ^4.25.2
         version: 4.25.2
+      axios:
+        specifier: ^1.11.0
+        version: 1.11.0
       leaflet:
         specifier: ^1.9.4
         version: 1.9.4
@@ -97,6 +100,9 @@ importers:
       react-dom:
         specifier: 19.1.0
         version: 19.1.0(react@19.1.0)
+      react-icons:
+        specifier: ^5.5.0
+        version: 5.5.0(react@19.1.0)
       react-instantsearch:
         specifier: ^7.16.2
         version: 7.16.2(algoliasearch@4.25.2)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
@@ -2851,6 +2857,11 @@ packages:
 
   react-fast-compare@3.2.2:
     resolution: {integrity: sha512-nsO+KSNgo1SbJqJEYRE9ERzo7YtYbou/OqjSQKxV7jcKox7+usiUVZOAC+XnDOABXggQTno0Y1CpVnuWEc1boQ==}
+
+  react-icons@5.5.0:
+    resolution: {integrity: sha512-MEFcXdkP3dLo8uumGI5xN3lDFNsRtrjbOEKDLD7yv76v4wpnEq2Lt2qeHaQOr34I/wPN3s3+N08WkQ+CW37Xiw==}
+    peerDependencies:
+      react: '*'
 
   react-instantsearch-core@6.40.4:
     resolution: {integrity: sha512-sEOgRU2MKL8edO85sNHvKlZ5yq9OFw++CDsEqYpHJvbWLE/2J2N49XAUY90kior09I2kBkbgowBbov+Py1AubQ==}
@@ -6403,6 +6414,10 @@ snapshots:
       scheduler: 0.26.0
 
   react-fast-compare@3.2.2: {}
+
+  react-icons@5.5.0(react@19.1.0):
+    dependencies:
+      react: 19.1.0
 
   react-instantsearch-core@6.40.4(algoliasearch@4.25.2)(react@19.1.0):
     dependencies:
