@@ -26,7 +26,7 @@ export default function MyMediaPage() {
           });
           if (res.ok) {
             const { favorites } = await res.json();
-            setFavorites(Array.isArray(favorites) ? favorites.map((f: any) => f.media).filter(Boolean) : []);
+            setFavorites(Array.isArray(favorites) ? favorites.map((f: Record<string, unknown>) => 'media' in f ? f.media as KnownMedia : null).filter(Boolean) as KnownMedia[] : []);
           }
         } catch (e) { setFavorites([]); }
       })();
@@ -57,8 +57,12 @@ export default function MyMediaPage() {
       } else {
         setError('No recommendations returned');
       }
-    } catch (e: any) {
-      setError(e?.message || 'Unknown error');
+    } catch (e) {
+      if (e && typeof e === 'object' && 'message' in e && typeof (e as { message?: unknown }).message === 'string') {
+        setError((e as { message: string }).message);
+      } else {
+        setError('Unknown error');
+      }
     } finally {
       setLoading(false);
     }

@@ -95,7 +95,7 @@ export default function Home() {
           if (res.ok) {
             const { favorites } = await res.json();
             // favorites: [{ media_id, media: {...} }]
-            setInLoveList(Array.isArray(favorites) ? favorites.map((f: any) => f.media).filter(Boolean) : []);
+            setInLoveList(Array.isArray(favorites) ? favorites.map((f: { media?: unknown }) => f.media).filter(Boolean) as KnownMedia[] : []);
           }
         } catch (e) { console.error('Fetch favorites failed', e); }
       })();
@@ -108,12 +108,13 @@ export default function Home() {
     setRecsLoading(true);
     setRecsError(null);
     try {
-      const favoritesPayload = inLoveList.map(f => ({
-        type: (f as any).type || (f as any).media_type,
-        external_id: (f as any).external_id || (f as any).id || (f as any).key,
-        title: (f as any).title || (f as any).name,
-        cover_image_url: (f as any).cover_image_url || (f as any).poster_path || (f as any).image_url || null
-      }));
+      const favoritesPayload = inLoveList.map(f => {
+        const type = (typeof f === 'object' && f && 'type' in f && typeof f.type === 'string') ? f.type : (typeof f === 'object' && f && 'media_type' in f && typeof (f as { media_type?: string }).media_type === 'string' ? (f as { media_type: string }).media_type : undefined);
+        const external_id = (typeof f === 'object' && f && 'external_id' in f) ? (f as { external_id?: string | number }).external_id : (typeof f === 'object' && f && 'id' in f ? (f as { id?: string | number }).id : (typeof f === 'object' && f && 'key' in f ? (f as { key?: string | number }).key : undefined));
+        const title = (typeof f === 'object' && f && 'title' in f && typeof f.title === 'string') ? f.title : (typeof f === 'object' && f && 'name' in f && typeof (f as { name?: string }).name === 'string' ? (f as { name: string }).name : undefined);
+        const cover_image_url = (typeof f === 'object' && f && 'cover_image_url' in f && typeof (f as { cover_image_url?: string }).cover_image_url === 'string') ? (f as { cover_image_url: string }).cover_image_url : (typeof f === 'object' && f && 'poster_path' in f && typeof (f as { poster_path?: string }).poster_path === 'string' ? (f as { poster_path: string }).poster_path : (typeof f === 'object' && f && 'image_url' in f && typeof (f as { image_url?: string }).image_url === 'string' ? (f as { image_url: string }).image_url : null));
+        return { type, external_id, title, cover_image_url };
+      });
       const bodyObj = { favorites: favoritesPayload };
       const bodyJson = JSON.stringify(bodyObj);
       const res = await fetch(`${backend}/api/recommend`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }, body: bodyJson });
@@ -122,10 +123,10 @@ export default function Home() {
       const films = data.films || data.recommendations?.films || [];
       const movies = data.movies || data.recommendations?.movies || films;
       const normalizedRecommendations = {
-        games: (data.games || data.recommendations?.games || []).map((x: KnownMedia) => normalizeMediaData(x)) as any,
-        movies: (movies || []).map((x: KnownMedia) => normalizeMediaData(x)) as any,
-        tv: (data.tv || data.recommendations?.tv || []).map((x: KnownMedia) => normalizeMediaData(x)) as any,
-        books: (data.books || data.recommendations?.books || []).map((x: KnownMedia) => normalizeMediaData(x)) as any
+        games: (data.games || data.recommendations?.games || []).map((x: KnownMedia) => normalizeMediaData(x)),
+        movies: (movies || []).map((x: KnownMedia) => normalizeMediaData(x)),
+        tv: (data.tv || data.recommendations?.tv || []).map((x: KnownMedia) => normalizeMediaData(x)),
+        books: (data.books || data.recommendations?.books || []).map((x: KnownMedia) => normalizeMediaData(x))
       };
       setMediaData(prev => ({ ...prev, recommended: normalizedRecommendations }));
       setViewMode('recommended');

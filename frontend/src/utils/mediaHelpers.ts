@@ -17,8 +17,15 @@ export function getTitle(item: KnownMedia): string {
 export function getImageUrl(item: KnownMedia): string | undefined {
   const s = item as SearchResult;
   // Normalized path (primary)
-  if ((s as any).image && typeof (s as any).image.url === 'string') return (s as any).image.url as string;
-  if ((s as any).imageUrl && typeof (s as any).imageUrl === 'string') return (s as any).imageUrl as string;
+  if (
+    typeof (s as { image?: { url?: string } }).image === 'object' &&
+    typeof (s as { image?: { url?: string } }).image?.url === 'string'
+  ) {
+    return (s as { image: { url: string } }).image.url;
+  }
+  if (typeof (s as { imageUrl?: string }).imageUrl === 'string') {
+    return (s as { imageUrl: string }).imageUrl;
+  }
   if (s.cover_image_url) return String(s.cover_image_url);
   // Poster path support (movies / tv)
   if ('poster_path' in item && item.poster_path) {
@@ -28,10 +35,17 @@ export function getImageUrl(item: KnownMedia): string | undefined {
     return p;
   }
   // Books (legacy nested volumeInfo kept minimal)
-  const anyItem: any = item as any;
-  if (anyItem.volumeInfo?.imageLinks?.thumbnail) return String(anyItem.volumeInfo.imageLinks.thumbnail).replace('http://','https://');
+  if (
+    typeof (item as { volumeInfo?: { imageLinks?: { thumbnail?: string } } }).volumeInfo === 'object' &&
+    typeof (item as { volumeInfo?: { imageLinks?: { thumbnail?: string } } }).volumeInfo?.imageLinks === 'object' &&
+    typeof (item as { volumeInfo?: { imageLinks?: { thumbnail?: string } } }).volumeInfo?.imageLinks?.thumbnail === 'string'
+  ) {
+    return String((item as { volumeInfo: { imageLinks: { thumbnail: string } } }).volumeInfo.imageLinks.thumbnail).replace('http://','https://');
+  }
   // Games cover
-  if (s.cover?.url) return String(s.cover.url).replace('t_thumb', 't_cover_big');
+  if (s.cover && typeof s.cover === 'object' && typeof s.cover.url === 'string') {
+    return String(s.cover.url).replace('t_thumb', 't_cover_big');
+  }
   // Background image fallback (games)
   if (s.background_image) return String(s.background_image);
   return undefined;
@@ -52,10 +66,13 @@ export function getField<T = unknown>(item: KnownMedia, field: string): T | unde
 // Normalize any incoming media-like object into a consistent NormalizedMedia shape
 export function normalizeMediaData(item: KnownMedia): NormalizedMedia {
   // Short circuit if already normalized
-  if ((item as any).__raw !== undefined && (item as any).imageUrl !== undefined) {
+  if (
+    typeof (item as { __raw?: unknown; imageUrl?: string }).__raw !== 'undefined' &&
+    typeof (item as { imageUrl?: string }).imageUrl !== 'undefined'
+  ) {
     return item as unknown as NormalizedMedia;
   }
-  const raw: any = item as any;
+  const raw = item as Record<string, unknown>;
   // Derive id
   const id = getId(item) ?? raw.objectID ?? raw.external_id ?? Math.random().toString(36).slice(2);
   // Derive type
@@ -65,8 +82,11 @@ export function normalizeMediaData(item: KnownMedia): NormalizedMedia {
   // Resolve best image
   let imageUrl = getImageUrl(item);
   // Additional deep fallbacks for books (volumeInfo)
-  if (!imageUrl && raw.volumeInfo?.imageLinks) {
-    imageUrl = raw.volumeInfo.imageLinks.thumbnail || raw.volumeInfo.imageLinks.smallThumbnail;
+  if (!imageUrl && typeof raw.volumeInfo === 'object' && raw.volumeInfo !== null) {
+    const volumeInfo = raw.volumeInfo as { imageLinks?: { thumbnail?: string; smallThumbnail?: string } };
+    if (volumeInfo.imageLinks) {
+      imageUrl = volumeInfo.imageLinks.thumbnail || volumeInfo.imageLinks.smallThumbnail;
+    }
   }
   if (imageUrl && imageUrl.startsWith('http://')) imageUrl = imageUrl.replace('http://','https://');
   // Provide aspect ratio guess: books 2/3, movies/tv/game 2/3 default for now
@@ -79,18 +99,25 @@ export function normalizeMediaData(item: KnownMedia): NormalizedMedia {
     image: imageUrl ? { url: imageUrl, aspectRatio } : null,
     // compatibility fields
     cover_image_url: imageUrl,
-    poster_path: raw.poster_path,
-    background_image: raw.background_image,
+    poster_path: typeof raw.poster_path === 'string' ? raw.poster_path : undefined,
+    background_image: typeof raw.background_image === 'string' ? raw.background_image : undefined,
     __raw: raw
   };
   return normalized;
 }
 
-function inferTypeFromFields(raw: any): string {
-  if (raw.backdrop_path || raw.poster_path) return 'movie';
-  if (raw.name && raw.first_air_date) return 'tv';
-  if (raw.background_image && !raw.poster_path) return 'game';
-  if (raw.key && raw.author) return 'book';
-  if (raw.volumeInfo && (raw.volumeInfo.authors || raw.volumeInfo.publisher)) return 'book';
+function inferTypeFromFields(raw: Record<string, unknown>): string {
+  if ('backdrop_path' in raw || 'poster_path' in raw) return 'movie';
+  if ('name' in raw && 'first_air_date' in raw) return 'tv';
+  if ('background_image' in raw && !('poster_path' in raw)) return 'game';
+  if ('key' in raw && 'author' in raw) return 'book';
+  if (
+    'volumeInfo' in raw &&
+    typeof raw.volumeInfo === 'object' &&
+    raw.volumeInfo !== null &&
+    ('authors' in (raw.volumeInfo as object) || 'publisher' in (raw.volumeInfo as object))
+  ) {
+    return 'book';
+  }
   return 'media';
 }

@@ -28,8 +28,12 @@ export default function GlobalMapView() {
         if (!res.ok) throw new Error('Failed to fetch map data');
         const data = await res.json();
         setMovies(Array.isArray(data.movies) ? data.movies : []);
-      } catch (e: any) {
-        setError(e?.message || 'Unknown error');
+      } catch (e) {
+        if (e && typeof e === 'object' && 'message' in e && typeof (e as { message?: unknown }).message === 'string') {
+          setError((e as { message: string }).message);
+        } else {
+          setError('Unknown error');
+        }
       } finally {
         setLoading(false);
       }

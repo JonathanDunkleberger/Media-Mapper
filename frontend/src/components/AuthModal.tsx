@@ -21,14 +21,18 @@ export default function AuthModal() {
     setError('');
     try {
       if (mode === 'login') {
-        const { error } = await signIn(email, password);
-        if (error) setError(error.message);
+        const result = await signIn(email, password);
+        if (result.error) setError(result.error.message);
       } else {
-        const { error } = await signUp(email, password);
-        if (error) setError(error.message);
+        const result = await signUp(email, password);
+        if (result.error) setError(result.error.message);
       }
-    } catch (e: any) {
-      setError(e.message);
+    } catch (e: unknown) {
+      if (e && typeof e === 'object' && 'message' in e && typeof (e as { message: unknown }).message === 'string') {
+        setError((e as { message: string }).message);
+      } else {
+        setError('An unknown error occurred.');
+      }
     }
   };
 

@@ -57,20 +57,6 @@ export type SearchResult = {
 };
 
 // KnownMedia is the union consumers should accept: either a strict MediaItem or a SearchResult
-export type NormalizedMedia = {
-  type: 'movie' | 'tv' | 'book' | 'game' | string;
-  id: string | number;
-  title: string;
-  imageUrl?: string;
-  // Provide a nested image object so existing getImageUrl() logic can still resolve it
-  image?: { url: string; aspectRatio?: number } | null;
-  // Preserve backwards compatibility fields commonly queried
-  cover_image_url?: string;
-  poster_path?: string;
-  background_image?: string;
-  // Original raw item for debugging / future enrichment
-  __raw?: unknown;
-};
 
 export type NormalizedMedia = {
   type: 'movie' | 'tv' | 'book' | 'game' | string;

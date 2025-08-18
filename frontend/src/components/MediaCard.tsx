@@ -13,7 +13,7 @@ type MediaCardProps = {
 
 export function MediaCard({ item }: MediaCardProps) {
   const initialImg = getImageUrl(item) ?? '';
-  const stdImage = (item as any).image;
+  const stdImage = (typeof item === 'object' && item && 'image' in item) ? (item as { image?: { aspectRatio?: number } }).image : undefined;
   const aspectRatio = useMemo(() => {
     if (stdImage && typeof stdImage.aspectRatio === 'number' && stdImage.aspectRatio > 0) {
       return stdImage.aspectRatio.toFixed(4);

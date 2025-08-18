@@ -2,19 +2,24 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { supabase } from '../utils/supabaseClient';
 
+type AuthResult = {
+  data: { user: { id: string; email?: string } | null; session: { user: { id: string; email?: string } } | null };
+  error: { message: string } | null;
+};
+
 type User = { id: string; email?: string } | null;
 
 const AuthContext = createContext<{
   user: User;
   loading: boolean;
-  signUp: (email: string, password: string) => Promise<any>;
-  signIn: (email: string, password: string) => Promise<any>;
+  signUp: (email: string, password: string) => Promise<AuthResult>;
+  signIn: (email: string, password: string) => Promise<AuthResult>;
   signOut: () => Promise<void>;
 }>({
   user: null,
   loading: true,
-  signUp: async () => {},
-  signIn: async () => {},
+  signUp: async () => ({ data: { user: null, session: null }, error: null }),
+  signIn: async () => ({ data: { user: null, session: null }, error: null }),
   signOut: async () => {},
 });
 
@@ -27,7 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const raw = window.localStorage.getItem('guest-favorites');
       if (!raw) return;
-      const favorites: any[] = JSON.parse(raw);
+  const favorites: Record<string, unknown>[] = JSON.parse(raw);
       for (const fav of favorites) {
         const id = fav.external_id || fav.id || fav.key;
         if (!id) continue;
@@ -62,22 +67,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => { listener?.subscription.unsubscribe(); };
   }, []);
 
-  const signUp = async (email: string, password: string) => {
+  const signUp = async (email: string, password: string): Promise<AuthResult> => {
     const result = await supabase.auth.signUp({ email, password });
-    // On successful signup, sync guest favorites
     if (result.data.session?.user && result.data.session.access_token) {
       await syncGuestFavorites(result.data.session.access_token);
     }
-    return result;
+    return { data: result.data, error: result.error };
   };
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string): Promise<AuthResult> => {
     const result = await supabase.auth.signInWithPassword({ email, password });
-    // On successful login, sync guest favorites
     if (result.data.session?.user && result.data.session.access_token) {
       await syncGuestFavorites(result.data.session.access_token);
     }
-    return result;
+    return { data: result.data, error: result.error };
   };
 
   const signOut = async () => { await supabase.auth.signOut(); };
