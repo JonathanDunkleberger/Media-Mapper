@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { useAuth } from '../context/AuthContext';
 import { SearchBar } from '../components/SearchBar';
 import { InLoveList } from '../components/InLoveList';
 import { MediaCarousel } from '../components/MediaCarousel';
@@ -10,11 +11,34 @@ import type { KnownMedia } from '../types/media';
 import { getId, getField, normalizeMediaData } from '../utils/mediaHelpers';
 
 export default function Home() {
-  const handleAddToInLove = (item: KnownMedia) => {
+  const { user } = useAuth();
+  // Add to favorites: if logged in, call API; else local state
+  const handleAddToInLove = async (item: KnownMedia) => {
     const normalized = normalizeMediaData(item);
     const id = getId(normalized);
     if (id == null) return;
-    setInLoveList(prev => prev.some(i => getId(i) === id) ? prev : [...prev, normalized]);
+    if (user) {
+      try {
+        const token = (await window?.localStorage.getItem('sb-access-token')) || '';
+        await fetch(`${backendBase}/api/favorites`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ media_id: id })
+        });
+        // Optionally: fetch updated favorites from server
+      } catch (e) { console.error('Add favorite failed', e); }
+    } else {
+      setInLoveList(prev => {
+        const exists = prev.some(i => getId(i) === id);
+        const updated = exists ? prev : [...prev, normalized];
+        // Save to localStorage for guests
+        window.localStorage.setItem('guest-favorites', JSON.stringify(updated));
+        return updated;
+      });
+    }
   };
   const handleRemoveFromInLove = (id: string | number) => {
     setInLoveList((prev) => prev.filter((item) => {
@@ -41,25 +65,42 @@ export default function Home() {
   useEffect(() => {
     const backend = backendBase;
     Promise.all([
-  fetch(`${backend}/api/popular/games`).then(res => res.json()),
-  fetch(`${backend}/api/popular/movies`).then(res => res.json()),
-  fetch(`${backend}/api/popular/tv`).then(res => res.json()),
-  fetch(`${backend}/api/popular/books`).then(res => res.json())
+      fetch(`${backend}/api/popular/games`).then(res => res.json()),
+      fetch(`${backend}/api/popular/movies`).then(res => res.json()),
+      fetch(`${backend}/api/popular/tv`).then(res => res.json()),
+      fetch(`${backend}/api/popular/books`).then(res => res.json())
     ])
-    .then(([gamesRes, moviesRes, tvRes, booksRes]) => {
-  setMediaData(prev => ({
-    ...prev,
-    popular: {
-      games: gamesRes.success && Array.isArray(gamesRes.games) ? gamesRes.games.map((g: KnownMedia) => normalizeMediaData(g)) : [],
-      movies: moviesRes.success && Array.isArray(moviesRes.movies) ? moviesRes.movies.map((m: KnownMedia) => normalizeMediaData(m)) : [],
-      tv: tvRes.success && Array.isArray(tvRes.tv) ? tvRes.tv.map((t: KnownMedia) => normalizeMediaData(t)) : [],
-      books: booksRes.success && Array.isArray(booksRes.books) ? booksRes.books.map((b: KnownMedia) => normalizeMediaData(b)) : []
+      .then(([gamesRes, moviesRes, tvRes, booksRes]) => {
+        setMediaData(prev => ({
+          ...prev,
+          popular: {
+            games: gamesRes.success && Array.isArray(gamesRes.games) ? gamesRes.games.map((g: KnownMedia) => normalizeMediaData(g)) : [],
+            movies: moviesRes.success && Array.isArray(moviesRes.movies) ? moviesRes.movies.map((m: KnownMedia) => normalizeMediaData(m)) : [],
+            tv: tvRes.success && Array.isArray(tvRes.tv) ? tvRes.tv.map((t: KnownMedia) => normalizeMediaData(t)) : [],
+            books: booksRes.success && Array.isArray(booksRes.books) ? booksRes.books.map((b: KnownMedia) => normalizeMediaData(b)) : []
+          }
+        }));
+      })
+      .catch(console.error)
+      .finally(() => setIsLoading(false));
+
+    // On login, fetch user favorites
+    if (user) {
+      (async () => {
+        try {
+          const token = (await window?.localStorage.getItem('sb-access-token')) || '';
+          const res = await fetch(`${backendBase}/api/favorites`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (res.ok) {
+            const { favorites } = await res.json();
+            // favorites: [{ media_id, media: {...} }]
+            setInLoveList(Array.isArray(favorites) ? favorites.map((f: any) => f.media).filter(Boolean) : []);
+          }
+        } catch (e) { console.error('Fetch favorites failed', e); }
+      })();
     }
-  }));
-    })
-    .catch(console.error)
-    .finally(() => setIsLoading(false));
-  }, [backendBase]);
+  }, [backendBase, user]);
   const backend = backendBase;
 
   const handleGetRecommendations = async () => {
