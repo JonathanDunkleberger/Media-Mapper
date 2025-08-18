@@ -1,7 +1,7 @@
 const RETRY_DELAY = 1000;
 const MAX_RETRIES = 3;
 
-export async function fetchWithRetry(url: string, options: RequestInit = {}, retries = 0): Promise<any> {
+export async function fetchWithRetry<T = unknown>(url: string, options: RequestInit = {}, retries = 0): Promise<T> {
   try {
     const response = await fetch(url, {
       ...options,
@@ -12,12 +12,15 @@ export async function fetchWithRetry(url: string, options: RequestInit = {}, ret
       },
     });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    return await response.json();
-  } catch (error: any) {
+    return (await response.json()) as T;
+  } catch (error) {
     if (retries < MAX_RETRIES) {
       await new Promise(res => setTimeout(res, RETRY_DELAY * (retries + 1)));
-      return fetchWithRetry(url, options, retries + 1);
+      return fetchWithRetry<T>(url, options, retries + 1);
     }
-    throw new Error(`API failed after ${MAX_RETRIES} attempts: ${error.message}`);
+    if (error instanceof Error) {
+      throw new Error(`API failed after ${MAX_RETRIES} attempts: ${error.message}`);
+    }
+    throw error;
   }
 }
