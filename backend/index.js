@@ -1,3 +1,15 @@
+// --- Global Media Map API ---
+const { fetchGlobalTopMovies } = require('./globalMap');
+
+app.get('/api/global-map-movies', async (req, res) => {
+  try {
+    const movies = await fetchGlobalTopMovies();
+    res.json({ movies });
+  } catch (e) {
+    console.error('Global map movies error', e);
+    res.status(500).json({ error: 'Failed to fetch global map movies' });
+  }
+});
 // --- Early runtime diagnostics (added for crash isolation) ---
 process.on('unhandledRejection', (err) => {
   console.error('UNHANDLED REJECTION:', err);
@@ -15,7 +27,63 @@ require('dotenv').config();
 
 const express = require('express');
 const cors = require('cors');
+
 const db = require('./db');
+const { supabase } = require('./supabaseClient');
+const jwt = require('jsonwebtoken');
+// --- Favorites Auth Middleware and Endpoints ---
+// Middleware to verify Supabase JWT and get user id
+async function requireUser(req, res, next) {
+  const auth = req.headers['authorization'];
+  if (!auth || !auth.startsWith('Bearer ')) return res.status(401).json({ error: 'Missing token' });
+  const token = auth.replace('Bearer ', '');
+  try {
+    // Supabase JWTs are signed with the project's JWT secret
+    const { sub: user_id } = jwt.decode(token) || {};
+    if (!user_id) throw new Error('Invalid token');
+    req.user = { id: user_id };
+    next();
+  } catch (e) {
+    res.status(401).json({ error: 'Invalid token' });
+  }
+}
+
+// Add a favorite
+app.post('/api/favorites', requireUser, async (req, res) => {
+  const { media_id } = req.body;
+  if (!media_id) return res.status(400).json({ error: 'Missing media_id' });
+  const { id: user_id } = req.user;
+  const { data, error } = await supabase
+    .from('favorites')
+    .insert([{ user_id, media_id }])
+    .select();
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ favorite: data[0] });
+});
+
+// Remove a favorite
+app.delete('/api/favorites/:media_id', requireUser, async (req, res) => {
+  const { id: user_id } = req.user;
+  const { media_id } = req.params;
+  const { error } = await supabase
+    .from('favorites')
+    .delete()
+    .eq('user_id', user_id)
+    .eq('media_id', media_id);
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ success: true });
+});
+
+// Get all favorites for the current user
+app.get('/api/favorites', requireUser, async (req, res) => {
+  const { id: user_id } = req.user;
+  const { data, error } = await supabase
+    .from('favorites')
+    .select('media_id, media(*)')
+    .eq('user_id', user_id);
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ favorites: data });
+});
 
 const app = express();
 
@@ -831,3 +899,60 @@ app.get('/api/popular/tv', async (req, res) => { try { const { data, cached } = 
 replaceRoute('/api/popular/books');
 app.get('/api/popular/books', async (req, res) => { try { const { data, cached } = await fetchPopularBooks(); const normalized = await normalizeList(data); return res.json({ success: true, books: normalized, cached, normalized: true }); } catch (e) { return res.status(500).json({ success: false, error: 'Failed to fetch popular books' }); }});
 // REPLACE_NORMALIZE_END
+
+// --- Recommendation Engine ---
+// POST /api/recommend: Given a list of favorite media, return 2-3 recommendations per favorite by genre/type
+app.post('/api/recommend', async (req, res) => {
+  try {
+    const favorites = req.body && (req.body.favorites || req.body.items || req.body);
+    if (!Array.isArray(favorites) || favorites.length === 0) {
+      return res.status(400).json({ error: 'No favorites provided' });
+    }
+
+    // Normalize all favorites to ensure type and title fields
+    const normalizedFavorites = await normalizeList(favorites, 5);
+    const recommendations = [];
+    const seen = new Set();
+
+    for (const fav of normalizedFavorites) {
+      const { type, title } = fav;
+      if (!type || !title) continue;
+
+      // Search for 2-3 other media items of the same type, excluding the favorite itself
+      let results = [];
+      try {
+        if (type === 'movie' || type === 'tv') {
+          // Use TMDB search by genre/type
+          results = await searchTmdb('', type); // Empty query returns trending
+        } else if (type === 'game') {
+          results = await fetchPopularGames().then(r => r.data || []);
+        } else if (type === 'book') {
+          results = await fetchPopularBooks().then(r => r.data || []);
+        }
+      } catch (e) { results = []; }
+
+      // Filter out the favorite itself and already recommended items
+      const filtered = (results || []).filter(item => {
+        const key = `${item.type || item.media_type}_${item.external_id || item.id || item.title}`;
+        const isSelf = (item.title === title);
+        if (seen.has(key) || isSelf) return false;
+        return true;
+      });
+
+      // Pick 2-3 recommendations per favorite
+      const picks = filtered.slice(0, 3);
+      for (const rec of picks) {
+        const key = `${rec.type || rec.media_type}_${rec.external_id || rec.id || rec.title}`;
+        seen.add(key);
+        recommendations.push(rec);
+      }
+    }
+
+    // Normalize recommendations for frontend display
+    const normalizedRecs = await normalizeList(recommendations, 5);
+    return res.json({ recommendations: normalizedRecs });
+  } catch (e) {
+    console.error('Recommendation error', e);
+    return res.status(500).json({ error: 'Failed to generate recommendations' });
+  }
+});
