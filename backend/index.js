@@ -551,12 +551,19 @@ app.post('/api/recommend', async (req, res) => {
       console.error('Failed to parse LLM JSON after cleaning. Original len:', raw.length, 'Cleaned snippet:', cleaned.slice(0,400));
       return res.status(500).json({ error: 'Invalid JSON from LLM (parse failure)' });
     }
+    // --- 4c. Normalize presence of all expected raw category keys BEFORE enrichment ---
+    // We treat "films" and "movies" interchangeably internally; external contract will expose "movies".
     const out = {
       games: Array.isArray(parsed.games) ? parsed.games.slice(0,7) : [],
       books: Array.isArray(parsed.books) ? parsed.books.slice(0,7) : [],
       films: Array.isArray(parsed.films) ? parsed.films.slice(0,7) : (Array.isArray(parsed.movies) ? parsed.movies.slice(0,7) : []),
       tv: Array.isArray(parsed.tv) ? parsed.tv.slice(0,7) : []
     };
+    // Explicit guarantee (defensive) – ensures downstream enrichment logic never sees undefined
+    if (!Array.isArray(out.games)) out.games = [];
+    if (!Array.isArray(out.books)) out.books = [];
+    if (!Array.isArray(out.films)) out.films = [];
+    if (!Array.isArray(out.tv)) out.tv = [];
     // Normalize minimal objects (strip any accidental extra keys other than allowed)
     function sanitize(list, typeHint) {
       return list.map(raw => ({
