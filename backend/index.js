@@ -579,6 +579,41 @@ app.post('/api/recommend', async (req, res) => {
     console.error('Recommendation error:', err);
     return res.status(500).json({ error: 'Recommendation generation failed' });
   }
+
+      // --- 6. Final image validation & hardening (Task 3) ---
+      const disallowedHosts = ['via.placeholder.com','placehold.co','placehold.it','dummyimage.com'];
+      const whitelistNoExtHosts = ['books.googleusercontent.com','lh3.googleusercontent.com','image.tmdb.org','images.igdb.com','media.igdb.com'];
+      function validImage(u) {
+        if (!u) return false;
+        if (/^data:/i.test(u)) return false;
+        try {
+          const urlObj = new URL(u.startsWith('http') ? u : 'https:' + (u.startsWith('//') ? u.slice(2) : u));
+          if (urlObj.protocol !== 'https:') return false; // enforce HTTPS
+          const host = urlObj.hostname.toLowerCase();
+          if (disallowedHosts.some(h => host === h || host.endsWith('.'+h))) return false;
+          if (/example\.com$/.test(host)) return false;
+          const pathname = urlObj.pathname.toLowerCase();
+          const hasExt = /\.(jpg|jpeg|png|webp|gif)(\?|$)/i.test(pathname);
+          if (hasExt) return true;
+          // Allow well-known hosts even without explicit extension (e.g. Google Books thumbnails)
+          if (whitelistNoExtHosts.some(h => host === h || host.endsWith('.'+h))) return true;
+          return false;
+        } catch { return false; }
+      }
+      function prune(list) {
+        return list.filter(it => validImage(it.cover_image_url || it.poster_path || it.image_url));
+      }
+      const beforeCounts = { games: out.games.length, books: out.books.length, films: out.films.length, tv: out.tv.length };
+      out.games = prune(out.games);
+      out.books = prune(out.books);
+      out.films = prune(out.films);
+      out.tv = prune(out.tv);
+      const afterCounts = { games: out.games.length, books: out.books.length, films: out.films.length, tv: out.tv.length };
+      Object.keys(afterCounts).forEach(k => {
+        if (afterCounts[k] < beforeCounts[k]) {
+          console.log(`[recommend] pruned ${beforeCounts[k]-afterCounts[k]} ${k} with invalid images`);
+        }
+      });
 });
 
 // Respect explicit PORT env var if provided, else default 3002 (aligns with frontend .env)
