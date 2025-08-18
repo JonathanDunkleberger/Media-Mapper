@@ -2,6 +2,9 @@
 const { fetchGlobalTopMovies } = require('./globalMap');
 
 app.get('/api/global-map-movies', async (req, res) => {
+  console.log('[API] /api/global-map-movies called', {
+    TMDB_API_KEY: !!process.env.TMDB_API_KEY
+  });
   try {
     const movies = await fetchGlobalTopMovies();
     res.json({ movies });
@@ -50,39 +53,64 @@ async function requireUser(req, res, next) {
 
 // Add a favorite
 app.post('/api/favorites', requireUser, async (req, res) => {
+  console.log('[API] /api/favorites POST called', {
+    SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL,
+    SUPABASE_SERVICE_ROLE_KEY: !!process.env.SUPABASE_SERVICE_ROLE_KEY
+  });
   const { media_id } = req.body;
   if (!media_id) return res.status(400).json({ error: 'Missing media_id' });
   const { id: user_id } = req.user;
-  const { data, error } = await supabase
-    .from('favorites')
-    .insert([{ user_id, media_id }])
-    .select();
-  if (error) return res.status(500).json({ error: error.message });
-  res.json({ favorite: data[0] });
+  try {
+    const { data, error } = await supabase
+      .from('favorites')
+      .insert([{ user_id, media_id }])
+      .select();
+    if (error) throw error;
+    res.json({ favorite: data[0] });
+  } catch (e) {
+    console.error('Add favorite error', e);
+    res.status(500).json({ error: 'Failed to add favorite' });
+  }
 });
 
 // Remove a favorite
 app.delete('/api/favorites/:media_id', requireUser, async (req, res) => {
+  console.log('[API] /api/favorites DELETE called', {
+    SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
+  });
   const { id: user_id } = req.user;
   const { media_id } = req.params;
-  const { error } = await supabase
-    .from('favorites')
-    .delete()
-    .eq('user_id', user_id)
-    .eq('media_id', media_id);
-  if (error) return res.status(500).json({ error: error.message });
-  res.json({ success: true });
+  try {
+    const { error } = await supabase
+      .from('favorites')
+      .delete()
+      .eq('user_id', user_id)
+      .eq('media_id', media_id);
+    if (error) throw error;
+    res.json({ success: true });
+  } catch (e) {
+    console.error('Delete favorite error', e);
+    res.status(500).json({ error: 'Failed to delete favorite' });
+  }
 });
 
 // Get all favorites for the current user
 app.get('/api/favorites', requireUser, async (req, res) => {
+  console.log('[API] /api/favorites GET called', {
+    SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
+  });
   const { id: user_id } = req.user;
-  const { data, error } = await supabase
-    .from('favorites')
-    .select('media_id, media(*)')
-    .eq('user_id', user_id);
-  if (error) return res.status(500).json({ error: error.message });
-  res.json({ favorites: data });
+  try {
+    const { data, error } = await supabase
+      .from('favorites')
+      .select('media_id, media(*)')
+      .eq('user_id', user_id);
+    if (error) throw error;
+    res.json({ favorites: data });
+  } catch (e) {
+    console.error('Get favorites error', e);
+    res.status(500).json({ error: 'Failed to fetch favorites' });
+  }
 });
 
 const app = express();

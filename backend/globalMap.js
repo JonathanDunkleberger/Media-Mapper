@@ -14,25 +14,40 @@ const COUNTRY_COORDS = {
 
 async function fetchTopMoviesByCountry(countryCode, apiKey) {
   const url = `https://api.themoviedb.org/3/movie/popular?api_key=${apiKey}&region=${countryCode}`;
-  const res = await fetch(url);
-  if (!res.ok) return [];
-  const json = await res.json();
-  return (json.results || []).slice(0, 3).map(movie => ({
-    id: movie.id,
-    title: movie.title,
-    poster: movie.poster_path ? `https://image.tmdb.org/t/p/w200${movie.poster_path}` : null,
-    country: countryCode,
-    coords: COUNTRY_COORDS[countryCode] || null
-  }));
+  try {
+    console.log(`[fetchTopMoviesByCountry] Fetching for ${countryCode} with apiKey present:`, !!apiKey);
+    const res = await fetch(url);
+    if (!res.ok) {
+      console.error(`[fetchTopMoviesByCountry] TMDB response not ok for ${countryCode}:`, res.status, res.statusText);
+      return [];
+    }
+    const json = await res.json();
+    return (json.results || []).slice(0, 3).map(movie => ({
+      id: movie.id,
+      title: movie.title,
+      poster: movie.poster_path ? `https://image.tmdb.org/t/p/w200${movie.poster_path}` : null,
+      country: countryCode,
+      coords: COUNTRY_COORDS[countryCode] || null
+    }));
+  } catch (error) {
+    console.error(`[fetchTopMoviesByCountry] Failed for ${countryCode}:`, error);
+    return [];
+  }
 }
 
 async function fetchGlobalTopMovies() {
   const apiKey = process.env.TMDB_API_KEY;
+  console.log('[fetchGlobalTopMovies] Called with TMDB_API_KEY present:', !!apiKey);
   if (!apiKey) throw new Error('TMDB_API_KEY not set');
-  const all = await Promise.all(
-    COUNTRY_CODES.map(code => fetchTopMoviesByCountry(code, apiKey))
-  );
-  return all.flat();
+  try {
+    const all = await Promise.all(
+      COUNTRY_CODES.map(code => fetchTopMoviesByCountry(code, apiKey))
+    );
+    return all.flat();
+  } catch (error) {
+    console.error('[fetchGlobalTopMovies] Error:', error);
+    return [];
+  }
 }
 
 module.exports = { fetchGlobalTopMovies };
