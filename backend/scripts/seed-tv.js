@@ -7,6 +7,7 @@ const fetch = require('node-fetch');
 const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '..', '.env') });
 const db = require('../db');
+const { getAlgoliaIndex } = require('./algoliaClient');
 
 const TMDB_TV_URL = 'https://api.themoviedb.org/3/tv/popular';
 const IMAGE_BASE = 'https://image.tmdb.org/t/p/w500';
@@ -59,34 +60,58 @@ async function main() {
   }
   try { await db.ready; } catch (e) { console.error('Database not ready:', e.message); process.exit(1); }
 
-  const url = `${TMDB_TV_URL}?api_key=${encodeURIComponent(TMDB_API_KEY)}&language=en-US&page=1`;
-  let data;
-  try {
-    console.log('Fetching popular TV shows from TMDB...');
-    const res = await fetch(url);
-    if (!res.ok) {
-      const text = await res.text();
-      throw new Error(`TMDB TV fetch failed (${res.status}): ${text}`);
-    }
-    data = await res.json();
-  } catch (e) {
-    console.error('Fetch error:', e.message); process.exit(1);
-  }
+  let page = 1;
+  let totalPages = 1;
+  const maxPages = parseInt(process.env.TV_SEED_PAGES || '50', 10);
+  const delayMs = parseInt(process.env.TV_SEED_DELAY_MS || '200', 10);
+  const delay = (ms) => new Promise(r => setTimeout(r, ms));
 
-  const results = Array.isArray(data.results) ? data.results : [];
-  console.log(`Fetched ${results.length} TV shows.`);
+  console.log('Fetching popular TV shows from TMDB (paginated)...');
+
+  let allResults = [];
+  while (page <= totalPages && page <= maxPages) {
+    console.log(`Fetching page ${page}/${Math.min(totalPages, maxPages)}...`);
+    const url = `${TMDB_TV_URL}?api_key=${encodeURIComponent(TMDB_API_KEY)}&language=en-US&page=${page}`;
+    let data;
+    try {
+      const res = await fetch(url);
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`TMDB TV fetch failed (${res.status}): ${text}`);
+      }
+      data = await res.json();
+    } catch (e) {
+      console.error('Fetch error:', e.message); break;
+    }
+    totalPages = data.total_pages || totalPages;
+    const results = Array.isArray(data.results) ? data.results : [];
+    console.log(`Page ${page} fetched ${results.length} shows.`);
+    allResults = allResults.concat(results);
+    page++;
+    if (page <= totalPages && page <= maxPages) await delay(delayMs);
+  }
+  console.log(`Fetched total ${allResults.length} TV shows across ${Math.min(page-1, maxPages)} pages.`);
 
   const mediaColumns = await introspectMediaColumns();
   console.log('Media table columns:', Array.from(mediaColumns).join(', '));
 
+  const algoliaIndex = getAlgoliaIndex();
+
   let inserted = 0;
-  for (const show of results) {
+  for (const show of allResults) {
     const row = transformShow(show);
     try {
       const result = await insertShow(row, mediaColumns);
       if (result.rowCount > 0) {
         inserted++;
         console.log(`Inserted TV Show: ${row.title}`);
+        if (algoliaIndex) {
+          const objectID = row.external_id ? `${row.type}_${row.external_id}` : `tv_${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
+          const record = { objectID, ...row };
+          algoliaIndex.partialUpdateObject(record, { createIfNotExists: true })
+            .then(() => console.log(`[Algolia] Indexed TV: ${row.title}`))
+            .catch(err => console.warn(`[Algolia] TV index error (${row.title}):`, err.message));
+        }
       } else {
         console.log(`Skipped (exists): ${row.title}`);
       }

@@ -8,6 +8,7 @@ const fetch = require('node-fetch');
 const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '..', '.env') });
 const db = require('../db');
+const { getAlgoliaIndex } = require('./algoliaClient');
 
 const TWITCH_OAUTH_URL = 'https://id.twitch.tv/oauth2/token';
 const IGDB_GAMES_URL = 'https://api.igdb.com/v4/games';
@@ -28,8 +29,8 @@ async function getTwitchAccessToken(clientId, clientSecret) {
   return json.access_token;
 }
 
-async function fetchGames(accessToken, clientId) {
-  const query = 'fields name, first_release_date, cover.url; where total_rating_count > 200 & category = 0; sort total_rating_count desc; limit 50;';
+async function fetchGames(accessToken, clientId, offset, limit) {
+  const query = `fields name, first_release_date, cover.url; where total_rating_count > 200 & category = 0; sort total_rating_count desc; limit ${limit}; offset ${offset};`;
   const res = await fetch(IGDB_GAMES_URL, {
     method: 'POST',
     headers: {
@@ -119,27 +120,47 @@ async function main() {
     process.exit(1);
   }
 
-  let games;
-  try {
-    console.log('Fetching games from IGDB...');
-    games = await fetchGames(token, TWITCH_CLIENT_ID);
-    console.log(`Fetched ${games.length} games.`);
-  } catch (e) {
-    console.error('IGDB fetch error:', e.message);
-    process.exit(1);
+  const pageSize = 20; // IGDB limit to accumulate ~1000 entries across 50 pages (20 * 50 = 1000)
+  const maxPages = parseInt(process.env.GAME_SEED_PAGES || '50', 10);
+  const delayMs = parseInt(process.env.GAME_SEED_DELAY_MS || '200', 10);
+  const delay = (ms)=> new Promise(r=>setTimeout(r,ms));
+  let allGames = [];
+  for (let page=1; page<=maxPages; page++) {
+    const offset = (page-1)*pageSize;
+    try {
+      console.log(`Fetching page ${page}/${maxPages} (offset ${offset}) from IGDB...`);
+      const batch = await fetchGames(token, TWITCH_CLIENT_ID, offset, pageSize);
+      console.log(`Fetched ${batch.length} games on page ${page}.`);
+      if (!batch.length) { console.log('No more games returned, stopping early.'); break; }
+      allGames = allGames.concat(batch);
+    } catch (e) {
+      console.error(`IGDB fetch error on page ${page}:`, e.message);
+      break;
+    }
+    if (page < maxPages) await delay(delayMs);
   }
+  console.log(`Total games fetched: ${allGames.length}`);
 
   const mediaColumns = await introspectMediaColumns();
   console.log('Media table columns:', Array.from(mediaColumns).join(', '));
 
+  const algoliaIndex = getAlgoliaIndex();
+
   let inserted = 0;
-  for (const g of games) {
+  for (const g of allGames) {
     const row = transformGame(g);
     try {
       const result = await insertGame(row, mediaColumns);
       if (result.rowCount > 0) {
         inserted++;
         console.log(`Inserted game: ${row.title}`);
+        if (algoliaIndex) {
+          const objectID = row.external_id ? `${row.type}_${row.external_id}` : `game_${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
+          const record = { objectID, ...row };
+          algoliaIndex.partialUpdateObject(record, { createIfNotExists: true })
+            .then(() => console.log(`[Algolia] Indexed game: ${row.title}`))
+            .catch(err => console.warn(`[Algolia] Game index error (${row.title}):`, err.message));
+        }
       } else {
         console.log(`Skipped (exists): ${row.title}`);
       }

@@ -20,8 +20,8 @@ let dbAvailable = false;
 
 async function attemptDbConnection(maxRetries = 30, delayMs = 1000) {
   if (!process.env.DATABASE_HOST) {
-    console.warn('⚠️ DATABASE_HOST is not set; database features disabled.');
-    return false;
+    console.warn('⚠️ DATABASE_HOST is not set; database features disabled (continuing without DB).');
+    return false; // Not an error condition for app uptime
   }
   for (let i = 0; i < maxRetries; i++) {
     try {
@@ -47,8 +47,10 @@ async function attemptDbConnection(maxRetries = 30, delayMs = 1000) {
 // Expose a promise that resolves when the database is connected (or rejects if it ultimately fails)
 const ready = (async () => {
   const success = await attemptDbConnection();
-  if (!success) throw new Error('Database connection failed after retries');
-  return true;
+  if (!success) {
+    console.warn('Proceeding without an active database connection. Some features may be disabled.');
+  }
+  return success;
 })();
 
 module.exports = {

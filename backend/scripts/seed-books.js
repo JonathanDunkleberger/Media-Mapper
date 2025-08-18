@@ -7,6 +7,7 @@ const fetch = require('node-fetch');
 const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '..', '.env') });
 const db = require('../db');
+const { getAlgoliaIndex } = require('./algoliaClient');
 
 const GOOGLE_BOOKS_URL = 'https://www.googleapis.com/books/v1/volumes';
 
@@ -64,34 +65,53 @@ async function main() {
     console.error('Database not ready:', e.message); process.exit(1);
   }
 
-  const url = `${GOOGLE_BOOKS_URL}?q=bestselling+fiction&maxResults=40&key=${encodeURIComponent(GOOGLE_BOOKS_API_KEY)}`;
-  let data;
-  try {
-    console.log('Fetching books from Google Books API...');
-    const res = await fetch(url);
-    if (!res.ok) {
-      const text = await res.text();
-      throw new Error(`Google Books fetch failed (${res.status}): ${text}`);
+  const pageSize = 20; // Google Books maxResults <= 40, choose 20 for safer pagination
+  const maxPages = parseInt(process.env.BOOK_SEED_PAGES || '50', 10);
+  const delayMs = parseInt(process.env.BOOK_SEED_DELAY_MS || '200', 10);
+  const delay = (ms)=> new Promise(r=>setTimeout(r,ms));
+  let allItems = [];
+  for (let page=1; page<=maxPages; page++) {
+    const startIndex = (page-1)*pageSize;
+    const url = `${GOOGLE_BOOKS_URL}?q=bestselling+fiction&maxResults=${pageSize}&startIndex=${startIndex}&key=${encodeURIComponent(GOOGLE_BOOKS_API_KEY)}`;
+    try {
+      console.log(`Fetching page ${page}/${maxPages} (startIndex=${startIndex}) from Google Books...`);
+      const res = await fetch(url);
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`Google Books fetch failed (${res.status}): ${text}`);
+      }
+      const data = await res.json();
+      const items = Array.isArray(data.items) ? data.items : [];
+      console.log(`Page ${page} fetched ${items.length} books.`);
+      if (!items.length) { console.log('No more books returned, stopping early.'); break; }
+      allItems = allItems.concat(items);
+    } catch (e) {
+      console.error(`Fetch error on page ${page}:`, e.message); break;
     }
-    data = await res.json();
-  } catch (e) {
-    console.error('Fetch error:', e.message); process.exit(1);
+    if (page < maxPages) await delay(delayMs);
   }
-
-  const items = Array.isArray(data.items) ? data.items : [];
-  console.log(`Fetched ${items.length} books.`);
+  console.log(`Fetched total ${allItems.length} books across pages.`);
 
   const mediaColumns = await introspectMediaColumns();
   console.log('Media table columns:', Array.from(mediaColumns).join(', '));
 
+  const algoliaIndex = getAlgoliaIndex();
+
   let inserted = 0;
-  for (const item of items) {
+  for (const item of allItems) {
     const row = transformVolume(item);
     try {
       const result = await insertBook(row, mediaColumns);
       if (result.rowCount > 0) {
         inserted++;
         console.log(`Inserted book: ${row.title}`);
+        if (algoliaIndex) {
+          const objectID = row.external_id ? `${row.type}_${row.external_id}` : `book_${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
+          const record = { objectID, ...row };
+          algoliaIndex.partialUpdateObject(record, { createIfNotExists: true })
+            .then(() => console.log(`[Algolia] Indexed book: ${row.title}`))
+            .catch(err => console.warn(`[Algolia] Book index error (${row.title}):`, err.message));
+        }
       } else {
         console.log(`Skipped (exists): ${row.title}`);
       }

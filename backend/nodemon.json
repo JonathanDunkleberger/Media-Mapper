@@ -1,0 +1,10 @@
+{
+  "watch": ["."],
+  "ext": "js,json",
+  "ignore": ["node_modules", "*.log", "algolia-payload.log"],
+  "legacyWatch": true,
+  "verbose": true,
+  "env": {
+    "PORT": "3002"
+  }
+}

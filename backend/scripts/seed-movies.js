@@ -8,6 +8,7 @@ const fetch = require('node-fetch'); // v2 commonjs import
 const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '..', '.env') });
 const db = require('../db');
+const { getAlgoliaIndex } = require('./algoliaClient');
 
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 const IMAGE_BASE = 'https://image.tmdb.org/t/p/w500';
@@ -58,11 +59,16 @@ async function main() {
     console.log('Skipping schema creation (table may already exist):', schemaErr.message);
   }
 
-  console.log('Fetching popular movies from TMDB...');
+  // Initialize Algolia (optional)
+  const algoliaIndex = getAlgoliaIndex();
+
+  console.log('Fetching popular movies from TMDB (paginated)...');
   let page = 1;
   let totalPages = 1;
   let inserted = 0;
-  const maxPages = parseInt(process.env.MOVIE_SEED_PAGES || '2', 10); // default seed only first 2 pages
+  const maxPages = parseInt(process.env.MOVIE_SEED_PAGES || '50', 10); // target ~50 pages (~1000 results)
+  const delayMs = parseInt(process.env.MOVIE_SEED_DELAY_MS || '200', 10);
+  const delay = (ms) => new Promise(r => setTimeout(r, ms));
 
   // Detect existing columns of media table for dynamic insert mapping
   let mediaColumns = new Set();
@@ -75,7 +81,8 @@ async function main() {
   }
 
   try {
-  while (page <= totalPages && page <= maxPages) {
+    while (page <= totalPages && page <= maxPages) {
+      console.log(`Fetching page ${page}/${Math.min(totalPages, maxPages)}...`);
       const url = `${TMDB_BASE_URL}/movie/popular?api_key=${apiKey}&language=en-US&page=${page}`;
       const res = await fetch(url);
       if (!res.ok) {
@@ -91,6 +98,7 @@ async function main() {
         const imageUrl = m.poster_path ? IMAGE_BASE + m.poster_path : null;
         const overview = m.overview || null;
         const externalId = m.id; // TMDB numeric id
+        const rowData = { title, type: 'movie', release_year: releaseYear, image_url: imageUrl, overview, external_id: externalId };
 
         // Helper to quote identifiers that contain uppercase or special chars
         const quoteIdent = (name) => (/^[a-z_][a-z0-9_]*$/.test(name) ? name : '"' + name.replace(/"/g, '""') + '"');
@@ -135,6 +143,13 @@ async function main() {
           if (result.rowCount > 0) {
             console.log(`Inserted: ${title}`);
             inserted++;
+            if (algoliaIndex) {
+              const objectID = rowData.external_id ? `${rowData.type}_${rowData.external_id}` : `movie_${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
+              const record = { objectID, ...rowData };
+              algoliaIndex.partialUpdateObject(record, { createIfNotExists: true })
+                .then(() => console.log(`[Algolia] Indexed movie: ${title}`))
+                .catch(err => console.warn(`[Algolia] Movie index error (${title}):`, err.message));
+            }
           } else {
             console.log(`Skipped (exists or no-op): ${title}`);
           }
@@ -143,13 +158,16 @@ async function main() {
         }
       }
 
-      console.log(`Completed page ${page}/${totalPages}`);
+      console.log(`Completed page ${page}. Total items inserted so far: ${inserted}`);
       page++;
+      if (page <= totalPages && page <= maxPages) {
+        await delay(delayMs);
+      }
     }
 
     try {
       const countRes = await db.query('SELECT COUNT(*) FROM media WHERE type = $1', ['movie']);
-      console.log(`Seeding complete. Newly inserted: ${inserted}. Total movies in table: ${countRes.rows[0].count}`);
+  console.log(`Seeding complete. Newly inserted: ${inserted}. Total movies in table: ${countRes.rows[0].count}`);
     } catch (countErr) {
       console.log(`Seeding complete. Newly inserted: ${inserted}. (Could not count movies: ${countErr.message})`);
     }

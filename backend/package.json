@@ -3,12 +3,16 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon index.js",
+  "dev": "nodemon --config nodemon.json index.js",
     "populate-search": "node scripts/populateAlgolia.js",
-  "db:seed:movies": "node scripts/seed-movies.js",
-  "db:seed:games": "node scripts/seed-games.js",
-  "db:seed:books": "node scripts/seed-books.js",
-  "db:seed:tv": "node scripts/seed-tv.js"
+    "db:seed:movies": "node scripts/seed-movies.js",
+    "db:seed:games": "node scripts/seed-games.js",
+    "db:seed:books": "node scripts/seed-books.js",
+  "db:seed:tv": "node scripts/seed-tv.js",
+  "db:seed:all": "node scripts/seed-all.js",
+  "search:reindex": "node scripts/reindex-algolia.js",
+  "search:reindex:clear": "node scripts/reindex-algolia.js --clear",
+  "search:config": "node scripts/configure-algolia-index.js"
   },
   "license": "ISC",
   "dependencies": {
