@@ -350,9 +350,27 @@ app.get('/popular/movies', async (req, res) => {
     return res.status(500).json({ success: false, error: 'Failed to fetch popular movies' });
   }
 });
+// API namespaced popular movies (Task 1 requirement)
+app.get('/api/popular/movies', async (req, res) => {
+  try {
+    const { data, cached } = await fetchPopularMovies();
+    return res.json({ success: true, movies: data, cached });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: 'Failed to fetch popular movies' });
+  }
+});
 
 // Popular games
 app.get('/popular/games', async (req, res) => {
+  try {
+    const { data, cached } = await fetchPopularGames();
+    return res.json({ success: true, games: data, cached });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: 'Failed to fetch popular games' });
+  }
+});
+// API namespaced popular games (Task 1 requirement)
+app.get('/api/popular/games', async (req, res) => {
   try {
     const { data, cached } = await fetchPopularGames();
     return res.json({ success: true, games: data, cached });
