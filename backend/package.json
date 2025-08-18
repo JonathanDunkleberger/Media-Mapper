@@ -4,19 +4,23 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon index.js",
-    "populate-search": "node scripts/populateAlgolia.js"
+    "populate-search": "node scripts/populateAlgolia.js",
+    "db:seed:movies": "node scripts/seed-movies.js"
   },
   "license": "ISC",
   "dependencies": {
     "algoliasearch": "^4.25.2",
     "axios": "^1.11.0",
     "bcrypt": "^5.1.1",
+    "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",
     "express": "^4.19.2",
     "howlongtobeat": "^1.8.0",
     "jsonwebtoken": "^9.0.2",
-    "pg": "^8.12.0"
+    "pg": "^8.12.0",
+    "@supabase/supabase-js": "^2.45.4",
+    "node-fetch": "^2.6.12"
   },
   "devDependencies": {
     "nodemon": "^3.1.4"

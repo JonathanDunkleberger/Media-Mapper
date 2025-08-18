@@ -1,285 +1,149 @@
-const express = require('express');
-const cors = require('cors');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const axios = require('axios');
-const { HowLongToBeatService } = require('howlongtobeat');
 require('dotenv').config();
 
+const express = require('express');
+const cors = require('cors');
 const db = require('./db');
 
-
-// --- SETUP & INITIALIZATION ---
 const app = express();
-const hltbService = new HowLongToBeatService();
-const PORT = process.env.PORT || 3001;
-const saltRounds = 10;
-
-// --- MIDDLEWARE ---
 app.use(cors());
 app.use(express.json());
 
+process.on('unhandledRejection', (reason) => {
+  console.error('Unhandled Rejection:', reason);
+});
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err);
+});
 
-// --- AUTHENTICATION ROUTES ---
-app.post('/signup', async (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password) {
-    return res.status(400).json({ success: false, message: 'Email and password are required.' });
-  }
-  if (!db.isDbAvailable || !db.isDbAvailable()) {
-    return res.status(503).json({ success: false, message: 'Service unavailable: database not connected.' });
-  }
+// GET /api/search?q=term
+app.get('/api/search', async (req, res) => {
+  const q = (req.query.q || '').toString().trim();
+  if (!q) return res.json([]);
   try {
-    const password_hash = await bcrypt.hash(password, saltRounds);
-    const result = await db.query(
-      'INSERT INTO users (email, password_hash) VALUES ($1, $2) RETURNING id, email, created_at',
-      [email, password_hash]
-    );
-    res.status(201).json({ success: true, user: result.rows[0] });
+    const pattern = `%${q}%`;
+    const result = await db.query('SELECT * FROM media WHERE title ILIKE $1 LIMIT 10', [pattern]);
+    return res.json(result.rows);
   } catch (err) {
-    if (err.code === '23505') {
-      return res.status(409).json({ success: false, message: 'User with this email already exists.' });
-    }
-    console.error(err);
-    res.status(500).json({ success: false, message: 'Server error during user creation.' });
+    console.error('Search error:', err.message || err);
+    return res.status(500).json({ error: 'Search failed' });
   }
 });
 
-app.post('/login', async (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password) {
-    return res.status(400).json({ success: false, message: 'Email and password are required.' });
-  }
-  if (!db.isDbAvailable || !db.isDbAvailable()) {
-    return res.status(503).json({ success: false, message: 'Service unavailable: database not connected.' });
-  }
+// POST /api/recommend - AI powered recommendations via Gemini (LLM)
+app.post('/api/recommend', async (req, res) => {
   try {
-    const userResult = await db.query('SELECT * FROM users WHERE email = $1', [email]);
-    if (userResult.rows.length === 0) {
-      return res.status(401).json({ success: false, message: 'Invalid credentials.' });
+    const favorites = Array.isArray(req.body?.favorites) ? req.body.favorites : [];
+    if (!favorites.length) {
+      return res.status(400).json({ error: 'favorites array required' });
     }
-    const user = userResult.rows[0];
-    const isMatch = await bcrypt.compare(password, user.password_hash);
-    if (!isMatch) {
-      return res.status(401).json({ success: false, message: 'Invalid credentials.' });
-    }
-    const token = jwt.sign(
-      { userId: user.id, email: user.email },
-      process.env.JWT_SECRET,
-      { expiresIn: '1h' }
-    );
-    res.json({ success: true, token: token });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: 'Server error during login.' });
-  }
-});
 
-// --- AUTHENTICATION MIDDLEWARE ---
-const authenticateToken = (req, res, next) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
-  if (token == null) return res.sendStatus(401);
-
-  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-    if (err) return res.sendStatus(403);
-    req.user = user;
-    next();
-  });
-};
-
-
-
-// --- SECURE FAVORITES ROUTES ---
-app.get('/api/favorites', authenticateToken, async (req, res) => {
-  if (!db.isDbAvailable || !db.isDbAvailable()) {
-    return res.status(503).json({ success: false, message: 'Service unavailable: database not connected.' });
-  }
-  try {
-    const result = await db.query(
-      'SELECT media_type, external_media_id, created_at FROM user_favorites WHERE user_id = $1',
-      [req.user.userId]
-    );
-    res.json({ success: true, favorites: result.rows });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: 'Server error fetching favorites.' });
-  }
-});
-
-app.post('/api/favorites', authenticateToken, async (req, res) => {
-  const { media_type, external_media_id } = req.body;
-  if (!media_type || !external_media_id) {
-    return res.status(400).json({ success: false, message: 'Media type and ID are required.' });
-  }
-  if (!db.isDbAvailable || !db.isDbAvailable()) {
-    return res.status(503).json({ success: false, message: 'Service unavailable: database not connected.' });
-  }
-  try {
-    const result = await db.query(
-      'INSERT INTO user_favorites (user_id, media_type, external_media_id) VALUES ($1, $2, $3) RETURNING *',
-      [req.user.userId, media_type, external_media_id]
-    );
-    res.status(201).json({ success: true, favorite: result.rows[0] });
-  } catch (err) {
-    if (err.code === '23505') {
-      return res.status(409).json({ success: false, message: 'This item is already in your favorites.' });
-    }
-    console.error(err);
-    res.status(500).json({ success: false, message: 'Server error adding favorite.' });
-  }
-});
-
-
-// --- PUBLIC DATA ROUTES ---
-
-// Popular Movies
-app.get('/popular/movies', async (req, res) => {
-  try {
-    const tmdbUrl = `https://api.themoviedb.org/3/movie/popular?api_key=${process.env.TMDB_API_KEY}&language=en-US&page=1`;
-    const response = await axios.get(tmdbUrl);
-    const movies = response.data.results.map(movie => ({
-      type: 'movie',
-      id: movie.id,
-      title: movie.title,
-      overview: movie.overview,
-      backdrop_path: movie.backdrop_path,
-      poster_path: movie.poster_path,
-    }));
-    res.json({ success: true, movies });
-  } catch (err) {
-    // Detailed logging for TMDb errors
-    try {
-      if (err.response) {
-        console.error('🔴 TMDb API error in /popular/movies:', {
-          status: err.response.status,
-          statusText: err.response.statusText,
-          data: err.response.data,
-        });
-      } else {
-        console.error('🔴 Error in /popular/movies:', err.message);
+    // Extract titles & group by media type heuristically
+    const groups = { games: [], movies: [], films: [], books: [], tv: [] };
+    for (const item of favorites) {
+      const type = (item.type || item.media_type || '').toString().toLowerCase();
+      const title = item.title || item.name || item.key || '';
+      if (!title) continue;
+      if (type === 'game' || type === 'games') groups.games.push(title);
+      else if (type === 'movie' || type === 'movies' || type === 'film' || type === 'films') groups.movies.push(title);
+      else if (type === 'book' || type === 'books') groups.books.push(title);
+      else if (type === 'tv' || type === 'show' || type === 'series') groups.tv.push(title);
+      else {
+        // Unclassified -> try to guess by simple keyword
+        if (/ring|souls|quest|legend|chronicle|battle/i.test(title)) groups.games.push(title);
+        else groups.movies.push(title); // fallback
       }
-    } catch (logErr) {
-      console.error('🔴 Error while logging TMDb failure:', logErr);
     }
-    // Return minimal error to client
-    res.status(500).json({ success: false, message: 'Failed to fetch popular movies.' });
-  }
-});
 
-// Popular TV & Anime
-app.get('/popular/tv', async (req, res) => {
-  try {
-    const tmdbUrl = `https://api.themoviedb.org/3/tv/popular?api_key=${process.env.TMDB_API_KEY}&language=en-US&page=1`;
-    const response = await axios.get(tmdbUrl);
-    const tv = response.data.results.map(show => ({
-      type: 'tv',
-      id: show.id,
-      name: show.name,
-      overview: show.overview,
-      backdrop_path: show.backdrop_path,
-      poster_path: show.poster_path,
-    }));
-    res.json({ success: true, tv });
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Failed to fetch popular TV shows.' });
-  }
-});
+    // Build descriptive summary
+    const summaryParts = [];
+    if (groups.games.length) summaryParts.push(`Games: ${groups.games.join(', ')}`);
+    if (groups.movies.length) summaryParts.push(`Films: ${groups.movies.join(', ')}`);
+    if (groups.books.length) summaryParts.push(`Books: ${groups.books.join(', ')}`);
+    if (groups.tv.length) summaryParts.push(`TV: ${groups.tv.join(', ')}`);
+    const userSummary = summaryParts.join('. ');
 
-// Popular Books
-app.get('/popular/books', async (req, res) => {
-  try {
-    const booksUrl = `https://www.googleapis.com/books/v1/volumes?q=bestseller&orderBy=relevance&maxResults=20&key=${process.env.GOOGLE_BOOKS_API_KEY}`;
-    const response = await axios.get(booksUrl);
-    const books = response.data.items.map(item => ({
-      type: 'book',
-      key: item.id,
-      title: item.volumeInfo.title,
-      author: item.volumeInfo.authors ? item.volumeInfo.authors[0] : 'Unknown',
-      imageLinks: item.volumeInfo.imageLinks || {},
-    }));
-    res.json({ success: true, books });
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Failed to fetch popular books.' });
-  }
-});
+    const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GEMINI_API_KEY;
+    if (!apiKey) {
+      return res.status(500).json({ error: 'Gemini API key not configured (GEMINI_API_KEY).' });
+    }
 
-// Popular Games
-app.get('/popular/games', async (req, res) => {
-  try {
-    const tokenResponse = await axios.post(`https://id.twitch.tv/oauth2/token?client_id=${process.env.TWITCH_CLIENT_ID}&client_secret=${process.env.TWITCH_CLIENT_SECRET}&grant_type=client_credentials`);
-    const accessToken = tokenResponse.data.access_token;
-    const igdbResponse = await axios({
-      url: "https://api.igdb.com/v4/games",
+    const prompt = `You are an expert cross-media curator AI. A user loves the following titles.\n${userSummary}\n\nTASK: Recommend 5 new items for each category: games, books, films, tv. IMPORTANT RULES:\n1. Do NOT repeat any provided favorite.\n2. Choose critically acclaimed, thematically resonant, or stylistically similar works.\n3. Favor variety across genres & eras.\n4. Provide rich, real titles (no fabricated media).\n5. If you are unsure for a category, still give thoughtful widely-recognized picks.\n\nOUTPUT: Return ONLY valid JSON matching EXACT schema (no markdown, no commentary):\n{\n  "games": [{"type": "game", "title": "...", "id": null, "description": "...", "releaseYear": 0, "cover_image_url": "", "studio": ""}],\n  "books": [{"type": "book", "title": "...", "author": "...", "id": null, "releaseYear": 0, "cover_image_url": ""}],\n  "films": [{"type": "movie", "title": "...", "id": null, "releaseYear": 0, "cover_image_url": "", "director": ""}],\n  "tv": [{"type": "tv", "title": "...", "id": null, "releaseYear": 0, "cover_image_url": "", "network": ""}]\n}\nNotes: \n- Use null for unknown id.\n- releaseYear numeric.\n- Always return 5 objects in each array.\n- Ensure pure JSON.`;
+
+    // Gemini generateContent API (v1beta)
+    const model = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+    const body = {
+      contents: [
+        { role: 'user', parts: [{ text: prompt }] }
+      ],
+      generationConfig: {
+        temperature: 0.7,
+        topK: 32,
+        topP: 0.95,
+        maxOutputTokens: 2048,
+        responseMimeType: 'application/json'
+      }
+    };
+
+    const resp = await fetch(endpoint, {
       method: 'POST',
-      headers: { 'Client-ID': process.env.TWITCH_CLIENT_ID, 'Authorization': `Bearer ${accessToken}` },
-      data: 'fields id, name, cover.url, rating; where rating > 85 & cover.url != null; sort rating desc; limit 20;'
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
     });
-    const games = igdbResponse.data.map(game => ({
-      type: 'game',
-      id: game.id,
-      name: game.name,
-      background_image: game.cover ? game.cover.url.replace('t_thumb', 't_cover_big') : '',
-    }));
-    res.json({ success: true, games });
-  } catch (err) {
-    console.error('Error in /popular/games:', err.response ? err.response.data : err.message, err.stack);
-    res.status(500).json({ success: false, message: 'Failed to fetch popular games.', error: err.response ? err.response.data : err.message });
-  }
-});
-
-
-// --- DETAILED MEDIA ENDPOINT ---
-app.get('/api/details/:mediaType/:id', async (req, res) => {
-  const { mediaType, id } = req.params;
-  try {
-    let details = {};
-    if (mediaType === 'movie' || mediaType === 'tv') {
-      const tmdbUrl = `https://api.themoviedb.org/3/${mediaType}/${id}?api_key=${process.env.TMDB_API_KEY}&append_to_response=videos,credits,recommendations`;
-      const response = await axios.get(tmdbUrl);
-      details = response.data;
-    } else if (mediaType === 'game') {
-      // --- IGDB & HLTB MASHUP LOGIC ---
-      const tokenResponse = await axios.post(`https://id.twitch.tv/oauth2/token?client_id=${process.env.TWITCH_CLIENT_ID}&client_secret=${process.env.TWITCH_CLIENT_SECRET}&grant_type=client_credentials`);
-      const accessToken = tokenResponse.data.access_token;
-
-      const igdbResponse = await axios({
-        url: "https://api.igdb.com/v4/games",
-        method: 'POST',
-        headers: { 'Client-ID': process.env.TWITCH_CLIENT_ID, 'Authorization': `Bearer ${accessToken}` },
-        data: `fields name, summary, cover.url, genres.name, platforms.name, aggregated_rating, rating, websites.url, websites.category, involved_companies.company.name; where id = ${id};`
-      });
-      
-      const gameData = igdbResponse.data[0];
-      if (!gameData) {
-        return res.status(404).json({ success: false, message: 'Game not found.' });
-      }
-
-      const hltbData = await hltbService.search(gameData.name);
-      details = { ...gameData, howlongtobeat: hltbData[0] || null };
-    } else if (mediaType === 'book') {
-        const booksUrl = `https://www.googleapis.com/books/v1/volumes/${id}?key=${process.env.GOOGLE_BOOKS_API_KEY}`;
-        const response = await axios.get(booksUrl);
-        details = response.data;
-    } else {
-        return res.status(400).json({ success: false, message: 'Invalid mediaType' });
+    if (!resp.ok) {
+      const text = await resp.text();
+      console.error('Gemini API error:', resp.status, text);
+      return res.status(502).json({ error: 'LLM request failed' });
     }
-    res.json({ success: true, details: details });
+    const json = await resp.json();
+    // Gemini response: { candidates: [ { content: { parts: [ { text: '...json...' } ] } } ] }
+    let raw = '';
+    try {
+      raw = json.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    } catch (_) { raw = ''; }
+    if (!raw) {
+      return res.status(500).json({ error: 'No content from LLM' });
+    }
+    // Strip markdown fences if any
+    raw = raw.trim();
+    if (raw.startsWith('```')) {
+      raw = raw.replace(/^```(json)?/i, '').replace(/```$/, '').trim();
+    }
+    let parsed;
+    try {
+      parsed = JSON.parse(raw);
+    } catch (e) {
+      console.error('Failed to parse LLM JSON. Raw:', raw.slice(0,400));
+      return res.status(500).json({ error: 'Invalid JSON from LLM' });
+    }
+    // Basic shape normalization
+    const out = {
+      games: Array.isArray(parsed.games) ? parsed.games : [],
+      books: Array.isArray(parsed.books) ? parsed.books : [],
+      films: Array.isArray(parsed.films) ? parsed.films : (Array.isArray(parsed.movies) ? parsed.movies : []),
+      tv: Array.isArray(parsed.tv) ? parsed.tv : []
+    };
+    return res.json(out);
   } catch (err) {
-    res.status(500).json({ success: false, message: 'Failed to fetch details.' });
+    console.error('Recommendation error:', err);
+    return res.status(500).json({ error: 'Recommendation generation failed' });
   }
 });
 
-
-// --- PERSONALIZED RECOMMENDATIONS ENDPOINT ---
-app.post('/api/recommendations', async (req, res) => {
-    // This is still a placeholder and will be the next major feature to build.
-    const inLoveList = req.body.inLoveList || [];
-    res.json({ success: true, message: "Recommendation logic not yet implemented.", received: inLoveList });
-});
-
-
-// --- SERVER START ---
-app.listen(PORT, () => {
-  console.log(`🚀 Server is running on http://localhost:${PORT}`);
-});
+const BASE_PORT = 3001;
+function start(port) {
+  const server = app.listen(port, () => {
+    console.log(`Server running on http://localhost:${port}`);
+  });
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      const next = port + 1;
+      console.warn(`Port ${port} in use, trying ${next}...`);
+      start(next);
+    } else {
+      console.error('Server error:', err);
+    }
+  });
+}
+start(BASE_PORT);

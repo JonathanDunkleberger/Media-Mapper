@@ -18,31 +18,38 @@ const pool = new Pool(poolConfig);
 
 let dbAvailable = false;
 
-async function checkDbConnection() {
+async function attemptDbConnection(maxRetries = 30, delayMs = 1000) {
   if (!process.env.DATABASE_HOST) {
-    console.warn('⚠️ DATABASE_HOST is not set; skipping initial DB connectivity check.');
-    dbAvailable = false;
-    return;
+    console.warn('⚠️ DATABASE_HOST is not set; database features disabled.');
+    return false;
   }
-
-  try {
-    const client = await pool.connect();
+  for (let i = 0; i < maxRetries; i++) {
     try {
-      const res = await client.query('SELECT NOW()');
-      console.log('✅ Database connected successfully at:', res.rows[0].now);
-      dbAvailable = true;
-    } finally {
-      client.release();
+      const client = await pool.connect();
+      try {
+        const res = await client.query('SELECT NOW()');
+        console.log('✅ Database connected successfully at:', res.rows[0].now);
+        dbAvailable = true;
+        return true;
+      } finally {
+        client.release();
+      }
+    } catch (err) {
+      const attempt = i + 1;
+      console.warn(`🔴 DB connection attempt ${attempt}/${maxRetries} failed: ${err.message}`);
+      if (attempt === maxRetries) break;
+      await new Promise(r => setTimeout(r, delayMs));
     }
-  } catch (err) {
-    // Don't crash the process for DNS/network issues — log and continue.
-    console.warn('🔴 Warning: Error connecting to the database (will continue without DB):', err.message);
-    dbAvailable = false;
   }
+  return false;
 }
 
-// Kick off an async, non-blocking health check
-checkDbConnection();
+// Expose a promise that resolves when the database is connected (or rejects if it ultimately fails)
+const ready = (async () => {
+  const success = await attemptDbConnection();
+  if (!success) throw new Error('Database connection failed after retries');
+  return true;
+})();
 
 module.exports = {
   query: (text, params) => {
@@ -52,4 +59,5 @@ module.exports = {
     return pool.query(text, params);
   },
   isDbAvailable: () => dbAvailable,
+  ready,
 };
