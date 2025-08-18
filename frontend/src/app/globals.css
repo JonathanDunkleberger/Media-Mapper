@@ -1,5 +1,6 @@
 @import "tailwindcss";
 
+
 :root {
   /* Base (light fallback) */
   --background: #ffffff;
@@ -26,7 +27,20 @@
   --xprime-card-glow: 0 0 0 1px rgba(139,92,246,0.15), 0 4px 18px -4px rgba(139,92,246,0.35);
   --xprime-gradient-hero: linear-gradient(140deg,#0d0919 0%,#120e24 55%,#1f153a 100%);
   --xprime-gradient-overlay: linear-gradient(to top,rgba(12,8,24,0.95),rgba(12,8,24,0.55),rgba(12,8,24,0));
+
+  /* Prime UI Clone System */
+  --prime-dark: #0f172a;
+  --prime-accent: #f43f5e;
+  --prime-gradient: linear-gradient(135deg, rgba(244,63,94,0.8) 0%, rgba(236,72,153,0.8) 100%);
 }
+
+.carousel {
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.carousel::-webkit-scrollbar { display: none; }
 
 /* Removed experimental @theme block (not recognized by current toolchain). */
 
