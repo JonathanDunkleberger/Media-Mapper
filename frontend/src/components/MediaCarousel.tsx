@@ -8,17 +8,20 @@ import { getId } from '../utils/mediaHelpers';
 
 interface MediaCarouselProps {
   title: string;
-  mediaType: string;
+  mediaType?: string;
+  items?: KnownMedia[];
   sectionId?: string;
   emptyMessage?: string;
 }
 
-export function MediaCarousel({ title, mediaType, sectionId, emptyMessage = 'No items available.' }: MediaCarouselProps) {
-  const [items, setItems] = useState<KnownMedia[]>([]);
-  const [loading, setLoading] = useState(true);
+export function MediaCarousel({ title, mediaType, items: itemsProp, sectionId, emptyMessage = 'No items available.' }: MediaCarouselProps) {
+  const [items, setItems] = useState<KnownMedia[]>(itemsProp ?? []);
+  const [loading, setLoading] = useState(!itemsProp);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (itemsProp) return;
+    if (!mediaType) return;
     const fetchMedia = async () => {
       setLoading(true);
       setError(null);
@@ -27,16 +30,14 @@ export function MediaCarousel({ title, mediaType, sectionId, emptyMessage = 'No 
         setItems(response.data);
       } catch (err) {
         setError('Error loading data. Showing fallback.');
-        setItems([{ title: 'Sample Item', id: 1 } as any]);
-        // Optionally log error
-        // eslint-disable-next-line no-console
+        setItems([{ title: 'Sample Item', id: 1 }]);
         console.error(`Error loading ${mediaType}:`, err);
       } finally {
         setLoading(false);
       }
     };
     fetchMedia();
-  }, [mediaType]);
+  }, [mediaType, itemsProp]);
 
   const showEmpty = !loading && items.length === 0;
   return (

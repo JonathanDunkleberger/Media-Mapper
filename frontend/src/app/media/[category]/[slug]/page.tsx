@@ -1,6 +1,7 @@
 import { MediaCarousel } from '../../../../components/MediaCarousel';
 import type { KnownMedia } from '../../../../types/media';
 import { getImageUrl, getTitle, getField, normalizeMediaData } from '../../../../utils/mediaHelpers';
+import Image from 'next/image';
 
 export default async function MediaDetailPage(props: unknown) {
   const p = props as { params?: { category: string; slug: string } } | undefined;
@@ -14,7 +15,7 @@ export default async function MediaDetailPage(props: unknown) {
   return (
     <main className="bg-black min-h-screen text-white">
       <section className="flex flex-col md:flex-row gap-8 p-8">
-  <img src={getImageUrl(media) ?? ''} alt={getTitle(media)} className="w-64 h-96 rounded-lg shadow-lg" />
+        <Image src={getImageUrl(media) ?? ''} alt={getTitle(media)} width={256} height={384} className="w-64 h-96 rounded-lg shadow-lg" />
         <div>
           <h1 className="text-4xl font-bold mb-2">{getTitle(media)}</h1>
           <p className="text-gray-400 mb-4">{getField<string>(media, 'release_date') ?? ''} &bull; {getField<string>(media, 'developer') ?? getField<string>(media, 'author') ?? ''}</p>

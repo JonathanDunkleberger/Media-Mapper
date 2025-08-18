@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useRef, useEffect, useMemo } from 'react';
+import Image from 'next/image';
 import algoliasearch from 'algoliasearch/lite';
 import type { KnownMedia, SearchResult } from '../types/media';
 
@@ -69,8 +70,9 @@ function HitsDropdown({ onSelect, close, query, loading, error, results, backend
                 });
                 if (resp.ok) {
                   const json = await resp.json();
-                  const enriched: unknown = json.item || json;
-                  onSelect(enriched as KnownMedia); // trusted server normalization shape
+                  // Use a type guard to ensure KnownMedia
+                  const enriched = (json.item || json) as KnownMedia;
+                  onSelect(enriched);
                 } else {
                   onSelect({ ...hit, title, type: mediaType } as KnownMedia);
                 }
@@ -80,7 +82,7 @@ function HitsDropdown({ onSelect, close, query, loading, error, results, backend
               close();
             }}
           >
-            <img src={img} alt={title} className="w-12 h-16 object-cover rounded" />
+            <Image src={img} alt={title} width={48} height={64} className="w-12 h-16 object-cover rounded" />
             <div className="flex flex-col">
               <span className="text-sm font-medium">{title}</span>
               <span className="text-[11px] uppercase tracking-wide text-gray-400">{mediaType}</span>

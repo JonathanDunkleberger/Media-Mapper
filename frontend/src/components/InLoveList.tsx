@@ -1,6 +1,7 @@
 
 'use client';
 import React from 'react';
+import Image from 'next/image';
 import type { KnownMedia } from '../types/media';
 import { getId, getTitle, getImageUrl, getMediaType } from '../utils/mediaHelpers';
 
@@ -30,7 +31,7 @@ export function InLoveList({ items, onRemove, variant = 'default', className = '
                   onClick={() => onRemove(id ?? '')}
                   aria-label="Remove"
                 >&times;</button>
-                <img src={image} alt={title} className="w-12 h-16 object-cover rounded shadow-sm flex-shrink-0" />
+                <Image src={image} alt={title} width={48} height={64} className="w-12 h-16 object-cover rounded shadow-sm flex-shrink-0" />
                 <div className="min-w-0">
                   <div className="text-sm font-medium leading-tight truncate">{title}</div>
                   <div className="text-[10px] uppercase tracking-wide text-gray-400 mt-0.5">{mediaType}</div>
@@ -59,7 +60,7 @@ export function InLoveList({ items, onRemove, variant = 'default', className = '
                 onClick={() => onRemove(id ?? '')}
                 aria-label="Remove"
               >&times;</button>
-              <img src={image} alt={title} className="w-20 h-32 object-cover rounded mb-2" />
+              <Image src={image} alt={title} width={80} height={128} className="w-20 h-32 object-cover rounded mb-2" />
               <div className="font-semibold text-center">{title}</div>
               <div className="text-xs text-gray-400 mt-1">{mediaType}</div>
             </div>
