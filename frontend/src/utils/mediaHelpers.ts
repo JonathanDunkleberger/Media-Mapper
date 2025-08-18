@@ -1,4 +1,4 @@
-import type { KnownMedia, SearchResult } from '../types/media';
+import type { KnownMedia, SearchResult, NormalizedMedia } from '../types/media';
 
 export function getId(item: KnownMedia): string | number | undefined {
   if ('id' in item && item.id !== undefined) return item.id;
@@ -16,19 +16,23 @@ export function getTitle(item: KnownMedia): string {
 
 export function getImageUrl(item: KnownMedia): string | undefined {
   const s = item as SearchResult;
-  // Standardized recommendation shape may provide image: { url, aspectRatio }
+  // Normalized path (primary)
   if ((s as any).image && typeof (s as any).image.url === 'string') return (s as any).image.url as string;
-  // Prefer explicit normalized cover image if present
+  if ((s as any).imageUrl && typeof (s as any).imageUrl === 'string') return (s as any).imageUrl as string;
   if (s.cover_image_url) return String(s.cover_image_url);
-  // Poster path may be a full URL (from normalization) or a TMDB relative path starting with '/'
+  // Poster path support (movies / tv)
   if ('poster_path' in item && item.poster_path) {
     const p = String(item.poster_path);
-    if (/^https?:\/\//i.test(p)) return p; // already absolute
-    if (p.startsWith('/')) return `https://image.tmdb.org/t/p/w500${p}`; // TMDB relative
-    return p; // some other relative or CDN path we pass through
+    if (/^https?:\/\//i.test(p)) return p;
+    if (p.startsWith('/')) return `https://image.tmdb.org/t/p/w500${p}`;
+    return p;
   }
-  if ('imageLinks' in item && item.imageLinks?.thumbnail) return item.imageLinks.thumbnail;
+  // Books (legacy nested volumeInfo kept minimal)
+  const anyItem: any = item as any;
+  if (anyItem.volumeInfo?.imageLinks?.thumbnail) return String(anyItem.volumeInfo.imageLinks.thumbnail).replace('http://','https://');
+  // Games cover
   if (s.cover?.url) return String(s.cover.url).replace('t_thumb', 't_cover_big');
+  // Background image fallback (games)
   if (s.background_image) return String(s.background_image);
   return undefined;
 }
@@ -43,4 +47,50 @@ export function getField<T = unknown>(item: KnownMedia, field: string): T | unde
   const v = (item as unknown as Record<string, unknown>)[field];
   if (v === undefined) return undefined;
   return v as T;
+}
+
+// Normalize any incoming media-like object into a consistent NormalizedMedia shape
+export function normalizeMediaData(item: KnownMedia): NormalizedMedia {
+  // Short circuit if already normalized
+  if ((item as any).__raw !== undefined && (item as any).imageUrl !== undefined) {
+    return item as unknown as NormalizedMedia;
+  }
+  const raw: any = item as any;
+  // Derive id
+  const id = getId(item) ?? raw.objectID ?? raw.external_id ?? Math.random().toString(36).slice(2);
+  // Derive type
+  const type = (raw.type || raw.media_type || raw.category || '').toString() || inferTypeFromFields(raw);
+  // Derive title
+  const title = getTitle(item) || raw.slug || String(id);
+  // Resolve best image
+  let imageUrl = getImageUrl(item);
+  // Additional deep fallbacks for books (volumeInfo)
+  if (!imageUrl && raw.volumeInfo?.imageLinks) {
+    imageUrl = raw.volumeInfo.imageLinks.thumbnail || raw.volumeInfo.imageLinks.smallThumbnail;
+  }
+  if (imageUrl && imageUrl.startsWith('http://')) imageUrl = imageUrl.replace('http://','https://');
+  // Provide aspect ratio guess: books 2/3, movies/tv/game 2/3 default for now
+  const aspectRatio = 2/3;
+  const normalized: NormalizedMedia = {
+    type,
+    id: typeof id === 'string' || typeof id === 'number' ? id : String(id),
+    title: String(title),
+    imageUrl: imageUrl,
+    image: imageUrl ? { url: imageUrl, aspectRatio } : null,
+    // compatibility fields
+    cover_image_url: imageUrl,
+    poster_path: raw.poster_path,
+    background_image: raw.background_image,
+    __raw: raw
+  };
+  return normalized;
+}
+
+function inferTypeFromFields(raw: any): string {
+  if (raw.backdrop_path || raw.poster_path) return 'movie';
+  if (raw.name && raw.first_air_date) return 'tv';
+  if (raw.background_image && !raw.poster_path) return 'game';
+  if (raw.key && raw.author) return 'book';
+  if (raw.volumeInfo && (raw.volumeInfo.authors || raw.volumeInfo.publisher)) return 'book';
+  return 'media';
 }
