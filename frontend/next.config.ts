@@ -26,9 +26,7 @@ const config: NextConfig = {
   typescript: {
     ignoreBuildErrors: true, // Temporary for debugging
   },
-  experimental: {
-    serverComponentsExternalPackages: ['sharp', 'onnxruntime-node']
-  }
+  serverExternalPackages: ['sharp', 'onnxruntime-node']
 };
 
 export default config;
