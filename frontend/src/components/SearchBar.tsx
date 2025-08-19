@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import Image from 'next/image';
+import { SafeImage } from './SafeImage';
 import algoliasearch from 'algoliasearch/lite';
 
 type AlgoliaSearchResponse<T> = { hits: T[]; [key: string]: unknown };
@@ -74,7 +74,7 @@ function HitsDropdown({ onSelect, close, query, loading, error, results }: HitsD
               close();
             }}
           >
-            <Image src={img} alt={title} width={48} height={64} className="w-12 h-16 object-cover rounded" />
+            <SafeImage src={img} alt={title} width={48} height={64} className="w-12 h-16 object-cover rounded" />
             <div className="flex flex-col">
               <span className="text-sm font-medium">{title}</span>
               <span className="text-[11px] uppercase tracking-wide text-gray-400">{mediaType}</span>
@@ -118,67 +118,7 @@ export function SearchBar({ onSelect }: SearchBarProps) {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  // Perform hybrid search (debounced)
-  useEffect(() => {
-    if (!query) { setResults([]); setLoading(false); setError(null); return; }
-    if (!algoliaIndex) { setError('Search unavailable'); return; }
-    const debounce = setTimeout(() => {
-      setLoading(true); setError(null);
-      const algoliaController = new AbortController();
-      const backendController = new AbortController();
-      abortRef.current.abortAlgolia = () => algoliaController.abort();
-      abortRef.current.abortBackend = () => backendController.abort();
-
-      const pAlgolia = algoliaIndex.search<KnownMedia>(query, { hitsPerPage: 20 })
-        .then((r: AlgoliaSearchResponse<KnownMedia>) => r.hits)
-        .catch((e: unknown) => { throw new Error('Algolia: ' + (e instanceof Error ? e.message : 'failed')); });
-  const backendUrl = `/api/search?q=${encodeURIComponent(query)}&type=all`;
-      const pBackend = fetch(backendUrl, { signal: backendController.signal })
-        .then(r => r.ok ? r.json() : Promise.reject(new Error('Backend HTTP ' + r.status)))
-        .catch((e: unknown) => { throw new Error('Live: ' + (e instanceof Error ? e.message : 'failed')); });
-
-      Promise.allSettled([pBackend, pAlgolia]).then(settled => {
-        const backendRes = settled[0].status === 'fulfilled' ? settled[0].value as KnownMedia[] : [];
-        const algoliaRes = settled[1].status === 'fulfilled' ? settled[1].value as KnownMedia[] : [];
-        const errs: string[] = [];
-        if (settled[0].status === 'rejected') errs.push((settled[0].reason as Error).message || 'live error');
-        if (settled[1].status === 'rejected') errs.push((settled[1].reason as Error).message || 'algolia error');
-        const seen = new Set<string>();
-        const combined: KnownMedia[] = [];
-        for (const src of [backendRes, algoliaRes]) {
-          for (const item of src) {
-            // Use type guards for uniqueKey
-            let type = '';
-            if ('media_type' in item && (item.media_type === 'movie' || item.media_type === 'tv' || item.media_type === 'book' || item.media_type === 'game')) {
-              type = item.media_type;
-            } else if ('type' in item && typeof item.type === 'string') {
-              type = item.type;
-            }
-            let id = '';
-            if ('external_id' in item && item.external_id) id = String(item.external_id);
-            else if ('id' in item && item.id) id = String(item.id);
-            else if ('objectID' in item && item.objectID) id = String(item.objectID);
-            let title = '';
-            if ('title' in item && item.title) title = String(item.title);
-            else if ('name' in item && item.name) title = String(item.name);
-            let key = '';
-            if ('key' in item && item.key) key = String(item.key);
-            const uniqueKey = `${type}_${id || title || key}`;
-            if (!seen.has(uniqueKey)) { seen.add(uniqueKey); combined.push(item); }
-          }
-        }
-        setResults(combined.slice(0, 30));
-        setError(errs.length ? errs.join(' | ') : null);
-      }).finally(() => setLoading(false));
-    }, 200);
-    return () => {
-      clearTimeout(debounce);
-      abortRef.current.abortAlgolia?.();
-      abortRef.current.abortBackend?.();
-    };
-  }, [query, algoliaIndex]);
-
-  // Perform hybrid search (debounced)
+  // Single debounced hybrid search (deduplicated)
   useEffect(() => {
     if (!query) { setResults([]); setLoading(false); setError(null); return; }
     if (!algoliaIndex) { setError('Search unavailable'); return; }

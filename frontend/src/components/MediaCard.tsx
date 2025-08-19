@@ -3,6 +3,7 @@
 'use client';
 import React from 'react';
 import Image from 'next/image';
+import { SafeImage } from './SafeImage';
 import { FaHeart } from 'react-icons/fa';
 import Link from 'next/link';
 import type { KnownMedia } from '../types/media';
@@ -77,14 +78,12 @@ export function MediaCard({ item }: MediaCardProps) {
       <div className="relative rounded-xl overflow-hidden bg-[var(--xprime-surface)] ring-1 ring-[color-mix(in_oklab,var(--xprime-purple)_35%,#1f153a)] shadow-sm hover:shadow-lg hover:ring-[var(--xprime-purple)] transition-all duration-300">
         <div className="relative w-full" style={{ aspectRatio: '2 / 3' }}>
           <FavoriteButton id={safeId} />
-          <Image
+          <SafeImage
             src={safeImageUrl}
             alt={safeTitle}
             width={200}
             height={300}
             className="media-tile-image h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-[1.06]"
-            loading="lazy"
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             priority={false}
           />
           <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
