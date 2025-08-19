@@ -6,6 +6,7 @@ import FilterBar, { GenreOpt, Mode } from '@/components/FilterBar';
 import { useSearchParams, useRouter } from 'next/navigation';
 import SkeletonTile from '@/components/SkeletonTile';
 import { track } from '@/lib/track';
+import { fetchInternalAPI } from '@/lib/api';
 
 const PAGE_SIZE = 60;
 const MAX_PAGES = 5;
@@ -82,11 +83,10 @@ export default function BrowseClient({ cat }: { cat: BrowseCat }) {
   // fetch genres list
   useEffect(() => {
     (async () => {
-      const r = await fetch(`/api/genres?cat=${cat}`, { next: { revalidate: 86400 } });
-      if (r.ok) {
-        const j = await r.json();
+      try {
+        const j = await fetchInternalAPI<{ items?: GenreOpt[] }>(`/api/genres?cat=${cat}`, { next: { revalidate: 86400 } });
         setAllGenres(j.items || []);
-      }
+      } catch { /* silent */ }
     })();
   }, [cat]);
 
@@ -110,9 +110,7 @@ export default function BrowseClient({ cat }: { cat: BrowseCat }) {
       const keyDesc = { cat, page: targetPage, mode, genres: genres.join(',') };
       const t0 = performance.now();
       const json = await retryFetch(async () => {
-        const r = await fetch(`/api/popular/${cat}?${params.toString()}`, { cache: 'no-store', signal: ac.signal });
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        return r.json();
+  return fetchInternalAPI<{ items?: MediaItem[]; results?: MediaItem[] }>(`/api/popular/${cat}?${params.toString()}`, { cache: 'no-store', signal: ac.signal });
       });
       const next: MediaItem[] = json.items || json.results || [];
       const t1 = performance.now();

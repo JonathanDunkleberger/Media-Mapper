@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { MediaItem } from '@/lib/types';
+import { fetchInternalAPI } from '@/lib/api';
 
 interface FavoritesState {
   items: MediaItem[];
@@ -10,7 +11,7 @@ interface FavoritesState {
   syncToServer: () => Promise<void>;
   loadFromServer: () => Promise<void>;
   setAll: (items: MediaItem[]) => void;
-  mergeAll: (items: MediaItem[]) => void;
+  mergeAll: (items: Array<Pick<MediaItem, 'id' | 'type'> & Partial<MediaItem>>) => void;
 }
 
 const STORAGE_KEY = 'favorites-v1';
@@ -50,22 +51,20 @@ export const useFavorites = create<FavoritesState>((set, get) => ({
   },
   syncToServer: async () => {
     const { items } = get();
-    await Promise.all(items.map(it => fetch('/api/favorites', {
+    await Promise.all(items.map(it => fetchInternalAPI(`/api/favorites`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ action: 'add', item: it })
     })));
   },
   loadFromServer: async () => {
-    const r = await fetch('/api/favorites', { cache: 'no-store' });
-    if (!r.ok) return;
-    const data = await r.json();
+    const data = await fetchInternalAPI<{ items?: MediaItem[] }>(`/api/favorites`, { cache: 'no-store' });
     const serverItems: MediaItem[] = data.items ?? [];
     get().mergeAll(serverItems);
     if (typeof window !== 'undefined') window.localStorage.setItem(STORAGE_KEY, JSON.stringify(get().items));
   },
   setAll: (items: MediaItem[]) => set({ items: dedupe(items) }),
-  mergeAll: (incoming: MediaItem[]) => {
+  mergeAll: (incoming) => {
     const map = new Map(get().items.map(i => [keyOf(i), i] as const));
     for (const it of incoming) map.set(keyOf(it), it);
     const merged = [...map.values()];

@@ -7,6 +7,7 @@ import { useAuth } from '../../context/AuthContext';
 import { InLoveList } from '../../components/InLoveList';
 // import { RecommendationsGrid } from '../../components/RecommendationsGrid';
 import type { KnownMedia } from '../../types/media';
+import { fetchInternalAPI } from '@/lib/api';
 
 export default function MyMediaPage() {
   const { user } = useAuth();
@@ -33,12 +34,10 @@ export default function MyMediaPage() {
       // Authenticated user logic
       try {
         const token = localStorage.getItem('sb-access-token') || '';
-        const res = await fetch('/api/favorites', {
+        const data = await fetchInternalAPI<{ favorites?: { media: KnownMedia }[] }>(`/api/favorites`, {
           headers: { 'Authorization': `Bearer ${token}` },
           signal: controller.signal
         });
-        if (!res.ok) throw new Error('Failed to fetch favorites');
-        const data = await res.json();
         if (Array.isArray(data.favorites)) {
           // data.favorites is expected to be an array of objects with a 'media' property of type KnownMedia
           const validFavorites = data.favorites
@@ -64,13 +63,11 @@ export default function MyMediaPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/recommend', {
+      const data = await fetchInternalAPI<{ recommendations?: unknown[] }>(`/api/recommend`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ favorites }),
       });
-      if (!res.ok) throw new Error('Failed to fetch recommendations');
-      const data = await res.json();
       // Store recommendations in sessionStorage for the recommendations page
       if (Array.isArray(data.recommendations)) {
         window.sessionStorage.setItem('recommendations', JSON.stringify(data.recommendations));

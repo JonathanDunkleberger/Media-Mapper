@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import MediaTile from '@/components/MediaTile';
 import type { MediaItem } from '@/lib/types';
+import { fetchInternalAPI } from '@/lib/api';
 
 export default function SearchClient() {
   const router = useRouter();
@@ -32,8 +33,7 @@ export default function SearchClient() {
     setLoading(true);
     (async () => {
       try {
-        const r = await fetch(`/api/search?q=${encodeURIComponent(q)}`, { cache: 'no-store', signal: ac.signal });
-        const json = await r.json();
+  const json = await fetchInternalAPI<{ items?: MediaItem[] }>(`/api/search?q=${encodeURIComponent(q)}`, { cache: 'no-store', signal: ac.signal });
         setItems((json.items ?? []).slice(0, 20));
       } catch {
         setItems([]);

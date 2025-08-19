@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { SafeImage } from './SafeImage';
 import type { MediaItem } from '@/lib/types';
+import { fetchInternalAPI } from '@/lib/api';
 
 export default function SearchAutosuggest() {
   const [q, setQ] = useState('');
@@ -16,10 +17,8 @@ export default function SearchAutosuggest() {
     const controller = new AbortController();
     const t = setTimeout(async () => {
       try {
-        const r = await fetch(`/api/search?q=${encodeURIComponent(q)}`, { signal: controller.signal, cache: 'no-store' });
-        if (!r.ok) { setOpen(false); return; }
-        const json = await r.json();
-        setItems(Array.isArray(json.items) ? json.items.slice(0, 10) : []);
+  const json = await fetchInternalAPI<{ items?: MediaItem[] }>(`/api/search?q=${encodeURIComponent(q)}`, { signal: controller.signal, cache: 'no-store' });
+  setItems(Array.isArray(json.items) ? json.items.slice(0, 10) : []);
         setOpen(true);
         setHighlight(0);
       } catch {}

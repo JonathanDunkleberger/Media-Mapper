@@ -4,12 +4,15 @@ import type { MediaItem } from '@/lib/types';
 import { cookies } from 'next/headers';
 import FavoritesSidebar from '@/components/FavoritesSidebar';
 import FavoritesDrawer from '@/components/FavoritesDrawer';
+import { fetchInternalAPI } from '@/lib/api';
 
 async function fetchRow(path: string, revalidate = 3600) {
-  const r = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL ?? ''}${path}`, { next: { revalidate } });
-  if (!r.ok) return [] as MediaItem[];
-  const json = await r.json();
-  return (json.results ?? json.items ?? json.movies ?? json.tv ?? json.games ?? json.books ?? []) as unknown[];
+  try {
+    const json = await fetchInternalAPI<Record<string, unknown>>(path, { next: { revalidate } });
+    return (json.results ?? json.items ?? json.movies ?? json.tv ?? json.games ?? json.books ?? []) as unknown[];
+  } catch {
+    return [] as MediaItem[];
+  }
 }
 
 export default async function Home() {

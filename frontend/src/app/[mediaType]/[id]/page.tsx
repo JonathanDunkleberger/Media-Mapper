@@ -3,6 +3,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { EnrichedMediaDetail } from '@/lib/detailTypes';
 import Image from 'next/image';
+import { fetchInternalAPI } from '@/lib/api';
 
 export default function MediaDetailPage() {
   const { mediaType, id } = useParams() as { mediaType: string; id: string };
@@ -13,8 +14,7 @@ export default function MediaDetailPage() {
   useEffect(() => {
     const controller = new AbortController();
     setLoading(true); setError(null);
-    fetch(`/api/details/${mediaType}/${id}`, { signal: controller.signal })
-      .then(r => r.json())
+    fetchInternalAPI<{ item?: EnrichedMediaDetail; error?: string }>(`/api/details/${mediaType}/${id}`, { signal: controller.signal })
       .then(json => {
         if (json?.item) setItem(json.item as EnrichedMediaDetail); else setError(json.error || 'Not found');
       })

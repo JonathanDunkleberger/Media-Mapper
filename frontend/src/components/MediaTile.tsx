@@ -5,6 +5,7 @@ import type { MediaItem } from '@/lib/types';
 import { useFavorites } from '@/store/favorites';
 import { useSession } from '@/lib/useSession';
 import { useToast } from '@/components/ui/ToastProvider';
+import { fetchInternalAPI } from '@/lib/api';
 
 export default function MediaTile({ item, showQuickFav = true }: { item: MediaItem; showQuickFav?: boolean }) {
   const { items, toggle } = useFavorites();
@@ -37,12 +38,11 @@ export default function MediaTile({ item, showQuickFav = true }: { item: MediaIt
             toggle(item);
             if (token) {
               try {
-                const r = await fetch('/api/favorites', {
+                await fetchInternalAPI(`/api/favorites`, {
                   method: 'POST',
                   headers: { 'content-type': 'application/json' },
                   body: JSON.stringify({ action: wasFav ? 'remove' : 'add', item }),
                 });
-                if (!r.ok) throw new Error('Failed');
                 push(wasFav ? 'Removed from favorites' : 'Added to favorites', { type: 'success', ttl: 2500 });
               } catch {
                 // rollback

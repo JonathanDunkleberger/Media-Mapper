@@ -3,6 +3,7 @@ import { FormEvent, useEffect, useState } from 'react';
 import { supabaseClient } from '@/lib/supabase';
 import { useSession } from '@/lib/useSession';
 import { useFavorites } from '@/store/favorites';
+import { fetchInternalAPI } from '@/lib/api';
 
 export default function AuthPanel() {
   const token = useSession();
@@ -19,8 +20,7 @@ export default function AuthPanel() {
       setEmailAddr(data.user?.email ?? null);
     });
     if (token) {
-      fetch('/api/favorites', { cache: 'no-store' })
-        .then(r => r.ok ? r.json() : null)
+  fetchInternalAPI<{ items?: unknown[] }>(`/api/favorites`, { cache: 'no-store' })
         .then(j => { if (active && j?.items) setServerCount(j.items.length); });
     } else {
       setServerCount(null);
