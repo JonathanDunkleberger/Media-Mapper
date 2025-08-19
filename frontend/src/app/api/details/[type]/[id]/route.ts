@@ -1,16 +1,16 @@
 import { NextResponse } from 'next/server';
 import { tmdbJson } from '@/lib/tmdb';
 import { igdb, igdbCoverUrl, IGDBGameRaw } from '@/lib/igdb';
-import { booksGet, GoogleVolumeRaw } from '@/lib/books';
-import { mapGamesIGDB, mapBooksGoogle } from '@/lib/map';
+import { booksGet } from '@/lib/books';
+import { mapGamesIGDB } from '@/lib/map';
 import { tmdbPosterUrl } from '@/lib/images';
 import { EnrichedMediaDetail } from '@/lib/detailTypes';
-import { zDetailsApiResponse, zEnrichedDetail } from '@/lib/schemas/details';
+import { zEnrichedDetail } from '@/lib/schemas/details';
 
 export const revalidate = 86400; // 24h for stable core details
 
 // --- Helpers ---
-async function howLongToBeatSearch(name: string): Promise<{ mainStory?: number; mainExtra?: number; completionist?: number }> {
+async function howLongToBeatSearch(): Promise<{ mainStory?: number; mainExtra?: number; completionist?: number }> {
   // Placeholder stub. Real implementation would call an internal proxy endpoint.
   try {
     // Return undefined times for now; extend later.
@@ -25,12 +25,12 @@ function readingMinutesFromPageCount(pages?: number | null): number | null {
 }
 
 // --- Route ---
-export async function GET(_req: Request, { params }: { params: { type: string; id: string } }) {
-  const { type, id } = params;
+export async function GET(_req: Request, { params }: { params: Promise<{ type: string; id: string }> }) {
+  const { type, id } = await params;
   if (!type || !id) return NextResponse.json({ error: 'Missing params' }, { status: 400 });
   try {
     if (type === 'movie' || type === 'tv') {
-      interface TmdbDetail { id: number; title?: string; name?: string; overview?: string; poster_path?: string | null; backdrop_path?: string | null; genres?: { name?: string }[]; runtime?: number | null; episode_run_time?: number[]; number_of_episodes?: number; tagline?: string; status?: string; budget?: number; revenue?: number; original_language?: string; release_date?: string; first_air_date?: string; adult?: boolean; content_ratings?: { results?: { iso_3166_1?: string; rating?: string }[] }; certifications?: any; } // simplified
+  interface TmdbDetail { id: number; title?: string; name?: string; overview?: string; poster_path?: string | null; backdrop_path?: string | null; genres?: { name?: string }[]; runtime?: number | null; episode_run_time?: number[]; number_of_episodes?: number; tagline?: string; status?: string; budget?: number; revenue?: number; original_language?: string; release_date?: string; first_air_date?: string; adult?: boolean; content_ratings?: { results?: { iso_3166_1?: string; rating?: string }[] }; certifications?: unknown; } // simplified
       const raw = await tmdbJson<TmdbDetail>(`/${type}/${id}`);
       const title = raw.title ?? raw.name ?? 'Untitled';
       const dateStr = raw.release_date || raw.first_air_date || null;
@@ -77,7 +77,7 @@ export async function GET(_req: Request, { params }: { params: { type: string; i
       const g = rows[0];
       if (!g) return NextResponse.json({ error: 'Not found' }, { status: 404 });
       const year = g.first_release_date ? new Date(g.first_release_date * 1000).getFullYear() : null;
-      const times = await howLongToBeatSearch(g.name || '');
+  const times = await howLongToBeatSearch();
       const detail: EnrichedMediaDetail = {
         id: g.id,
         type: 'game',
@@ -111,7 +111,8 @@ export async function GET(_req: Request, { params }: { params: { type: string; i
       const yearStr = vi.publishedDate?.slice(0,4) || null;
       const year = yearStr && /\d{4}/.test(yearStr) ? Number(yearStr) : null;
       const img = vi.imageLinks?.thumbnail || vi.imageLinks?.smallThumbnail || null;
-      const pageCount = (vi as any).pageCount as number | undefined;
+  const viRecord = vi as Record<string, unknown>;
+  const pageCount = typeof viRecord.pageCount === 'number' ? viRecord.pageCount : undefined;
       const detail: EnrichedMediaDetail = {
         id: vol.id,
         type: 'book',
@@ -126,7 +127,9 @@ export async function GET(_req: Request, { params }: { params: { type: string; i
         authors: vi.authors || [],
         publisher: vi.publisher || null,
         publishedDate: vi.publishedDate || null,
-        isbn: Array.isArray((vi as any).industryIdentifiers) ? (vi as any).industryIdentifiers[0]?.identifier : null,
+        isbn: Array.isArray((viRecord.industryIdentifiers as unknown[] | undefined))
+          ? (viRecord.industryIdentifiers as Array<{ identifier?: string }>)[0]?.identifier ?? null
+          : null,
         recommendations: [],
         crossRecommendations: [],
         rating: [],

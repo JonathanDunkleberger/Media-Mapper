@@ -157,7 +157,6 @@ export default function BrowseClient({ cat }: { cat: BrowseCat }) {
   // initial + dependency-driven fetch
   useEffect(() => {
     fetchPage(1, true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cat, mode, genres, fetchPage]);
 
   const onLoadMore = () => {

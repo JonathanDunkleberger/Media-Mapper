@@ -25,8 +25,8 @@ export async function GET(req: Request) {
   const qs = zQuery.parse({
     page: searchParams.get('page') ?? '1',
     genres: searchParams.get('genres') ?? undefined,
-    mode: (searchParams.get('mode') as any) ?? 'popular',
-    sort: (searchParams.get('sort') as any) ?? 'popularity',
+  mode: (searchParams.get('mode') as 'popular'|'trending'|'top_rated' | null) ?? 'popular',
+  sort: (searchParams.get('sort') as 'popularity'|'top_rated' | null) ?? 'popularity',
   });
   const selectedGenreIds = parseGenreIds(qs.genres);
   const take = 60; // fixed page size before client pagination
@@ -77,8 +77,9 @@ export async function GET(req: Request) {
     });
 
     return NextResponse.json({ items: processed.slice(0, take) });
-  } catch (e: any) {
-    const msg = e?.name === 'ZodError' ? 'Upstream payload did not match expected schema.' : (e instanceof Error ? e.message : 'failed');
+  } catch (e: unknown) {
+    const err = e as { name?: string; message?: string } | null;
+    const msg = err?.name === 'ZodError' ? 'Upstream payload did not match expected schema.' : (e instanceof Error ? e.message : 'failed');
     return NextResponse.json({ error: msg }, { status: 502 });
   }
 }
