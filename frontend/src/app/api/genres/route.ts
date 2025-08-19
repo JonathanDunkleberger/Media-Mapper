@@ -1,26 +1,20 @@
-import { NextResponse } from 'next/server';
+import { z } from 'zod';
+import { createJsonRoute } from '@/lib/api/route-factory';
 import { getTmdbMovieGenres, getTmdbTvGenres, getAnimeGenres, getIgdbGenres, getBookSubjects } from '@/lib/genres';
 
-export const revalidate = 86400;
+const Query = z.object({ cat: z.string().optional() });
 
-export async function GET(req: Request) {
-  const url = new URL(req.url);
-  const cat = url.searchParams.get('cat');
-  let items: { id: string; label: string }[] = [];
-  try {
-    switch (cat) {
-      case 'movie': items = await getTmdbMovieGenres(); break;
-      case 'tv': items = await getTmdbTvGenres(); break;
-      case 'anime': items = await getAnimeGenres(); break;
-      case 'game': items = await getIgdbGenres(); break;
-      case 'book': items = await getBookSubjects(); break;
-      default: items = [];
+export const GET = createJsonRoute({
+  schema: Query,
+  cacheSeconds: 86400,
+  async run({ query }) {
+    switch (query.cat) {
+      case 'movie': return await getTmdbMovieGenres();
+      case 'tv': return await getTmdbTvGenres();
+      case 'anime': return await getAnimeGenres();
+      case 'game': return await getIgdbGenres();
+      case 'book': return await getBookSubjects();
+      default: return [];
     }
-  const headers = new Headers();
-  headers.set('Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=600');
-  return NextResponse.json({ items }, { headers });
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : 'genre error';
-    return NextResponse.json({ error: msg }, { status: 500 });
   }
-}
+});

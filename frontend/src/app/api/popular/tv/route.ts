@@ -1,19 +1,23 @@
-import { NextResponse } from 'next/server';
+import { z } from 'zod';
 import { tmdbJson } from '@/lib/tmdb';
 import { mapTV, TMDBTV } from '@/lib/map';
-
-export const revalidate = 300;
+import { createJsonRoute } from '@/lib/api/route-factory';
 
 interface TMDBTvWithGenres extends TMDBTV { genre_ids?: number[] }
 interface TMDBResp { results?: TMDBTvWithGenres[] }
 
-export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url);
-  const take = Math.min(Math.max(Number(searchParams.get('take')) || 60, 1), 100);
-  const page = Math.min(Math.max(Number(searchParams.get('page')) || 1, 1), 20);
-  const mode = (searchParams.get('mode') || 'popular') as 'popular' | 'trending' | 'top_rated';
-  const genres = searchParams.get('genres');
-  try {
+const Query = z.object({
+  take: z.coerce.number().int().min(1).max(100).default(60),
+  page: z.coerce.number().int().min(1).max(20).default(1),
+  mode: z.enum(['popular','trending','top_rated']).default('popular'),
+  genres: z.string().optional(),
+});
+
+export const GET = createJsonRoute({
+  schema: Query,
+  cacheSeconds: 300,
+  async run({ query }) {
+    const { take, page, mode, genres } = query;
     const collected: TMDBTV[] = [];
     let curPage = page;
     const baseSort = mode === 'top_rated' ? 'vote_average.desc' : 'popularity.desc';
@@ -44,11 +48,6 @@ export async function GET(req: Request) {
       const genreSet = new Set(genres.split(','));
       list = list.filter(m => m.genre_ids?.some(g => genreSet.has(String(g))));
     }
-  const headers = new Headers();
-  headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=60');
-  return NextResponse.json({ items: mapTV(list).slice(0, take) }, { headers });
-  } catch (e) {
-    const message = e instanceof Error ? e.message : 'failed to load';
-    return NextResponse.json({ error: message }, { status: 502 });
+    return mapTV(list).slice(0, take);
   }
-}
+});

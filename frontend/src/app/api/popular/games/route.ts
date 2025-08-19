@@ -1,15 +1,20 @@
-import { NextResponse } from 'next/server';
+import { z } from 'zod';
 import { igdb, IGDBGameRaw } from '@/lib/igdb';
 import { mapGamesIGDB } from '@/lib/map';
-export const revalidate = 300;
+import { createJsonRoute } from '@/lib/api/route-factory';
 
-export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url);
-  const take = Math.min(Math.max(Number(searchParams.get('take')) || 60, 1), 100);
-  const page = Math.min(Math.max(Number(searchParams.get('page')) || 1, 1), 20);
-  const mode = (searchParams.get('mode') || 'popular') as 'popular' | 'top_rated';
-  const genres = searchParams.get('genres');
-  try {
+const Query = z.object({
+  take: z.coerce.number().int().min(1).max(100).default(60),
+  page: z.coerce.number().int().min(1).max(20).default(1),
+  mode: z.enum(['popular','top_rated']).default('popular'),
+  genres: z.string().optional(),
+});
+
+export const GET = createJsonRoute({
+  schema: Query,
+  cacheSeconds: 300,
+  async run({ query }) {
+    const { take, page, mode, genres } = query;
     const offset = (page - 1) * take;
     const whereParts = [ 'first_release_date != null' ];
     if (mode === 'top_rated') whereParts.push('rating_count != null', 'total_rating != null');
@@ -18,11 +23,6 @@ export async function GET(req: Request) {
     const sort = mode === 'top_rated' ? 'total_rating desc' : 'rating_count desc';
     const body = `fields name,cover.image_id,first_release_date,total_rating,rating_count,genres; sort ${sort}; ${whereClause} limit ${take}; offset ${offset};`;
     const data = await igdb<IGDBGameRaw>('games', body);
-  const headers = new Headers();
-  headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=60');
-  return NextResponse.json({ items: mapGamesIGDB(data) }, { headers });
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : 'failed';
-    return NextResponse.json({ error: msg }, { status: 500 });
+    return mapGamesIGDB(data);
   }
-}
+});
