@@ -87,9 +87,10 @@ function HitsDropdown({ onSelect, close, query, loading, error, results }: HitsD
   );
 }
 
+import { env as clientEnv } from '@/lib/env.client';
 export function SearchBar({ onSelect }: SearchBarProps) {
-  const appId = process.env.NEXT_PUBLIC_ALGOLIA_APP_ID;
-  const searchKey = process.env.NEXT_PUBLIC_ALGOLIA_SEARCH_KEY;
+  const appId = clientEnv.NEXT_PUBLIC_ALGOLIA_APP_ID;
+  const searchKey = clientEnv.NEXT_PUBLIC_ALGOLIA_SEARCH_KEY;
   // No backendBase needed; use /api endpoints directly
   const indexName = 'media';
 

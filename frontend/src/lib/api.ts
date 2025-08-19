@@ -1,8 +1,8 @@
-import { getBaseUrl } from './env';
-
-// Internal API fetch helper constructing an absolute URL for SSR/Edge.
+// Internal API base URL resolver that is safe on both server & client.
 export function internalBaseUrl(): string {
-  return getBaseUrl();
+  if (typeof window !== 'undefined') return ''; // relative on client
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  return process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
 }
 
 export async function fetchInternalAPI<T = unknown>(endpoint: string, init?: RequestInit): Promise<T> {
