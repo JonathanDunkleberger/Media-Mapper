@@ -68,7 +68,9 @@ export async function GET(_req: Request, { params }: { params: Promise<{ type: s
         });
       } catch {}
   const parsed = zEnrichedDetail.parse(detail);
-  return NextResponse.json({ item: parsed });
+  const headers = new Headers();
+  headers.set('Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=600');
+  return NextResponse.json({ item: parsed }, { headers });
     }
 
     if (type === 'game') {
@@ -101,7 +103,9 @@ export async function GET(_req: Request, { params }: { params: Promise<{ type: s
         } catch {}
       }
   const parsed = zEnrichedDetail.parse(detail);
-  return NextResponse.json({ item: parsed });
+  const headers = new Headers();
+  headers.set('Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=600');
+  return NextResponse.json({ item: parsed }, { headers });
     }
 
     if (type === 'book') {
@@ -135,7 +139,9 @@ export async function GET(_req: Request, { params }: { params: Promise<{ type: s
         rating: [],
       };
   const parsed = zEnrichedDetail.parse(detail);
-  return NextResponse.json({ item: parsed });
+  const headers = new Headers();
+  headers.set('Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=600');
+  return NextResponse.json({ item: parsed }, { headers });
     }
 
     return NextResponse.json({ error: 'Unsupported type' }, { status: 400 });

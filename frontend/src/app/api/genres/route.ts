@@ -16,7 +16,9 @@ export async function GET(req: Request) {
       case 'book': items = await getBookSubjects(); break;
       default: items = [];
     }
-    return NextResponse.json({ items });
+  const headers = new Headers();
+  headers.set('Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=600');
+  return NextResponse.json({ items }, { headers });
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'genre error';
     return NextResponse.json({ error: msg }, { status: 500 });

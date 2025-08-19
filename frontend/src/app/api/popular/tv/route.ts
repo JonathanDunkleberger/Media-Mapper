@@ -44,7 +44,9 @@ export async function GET(req: Request) {
       const genreSet = new Set(genres.split(','));
       list = list.filter(m => m.genre_ids?.some(g => genreSet.has(String(g))));
     }
-    return NextResponse.json({ items: mapTV(list).slice(0, take) });
+  const headers = new Headers();
+  headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=60');
+  return NextResponse.json({ items: mapTV(list).slice(0, take) }, { headers });
   } catch (e) {
     const message = e instanceof Error ? e.message : 'failed to load';
     return NextResponse.json({ error: message }, { status: 502 });

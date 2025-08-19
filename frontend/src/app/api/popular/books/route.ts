@@ -20,7 +20,9 @@ export async function GET(req: Request) {
       const batch2 = await booksSearch(subjects, take - 40, startIndex + 40, order) as GoogleVolumeRaw[];
       combined = [...batch1, ...batch2];
     }
-    return NextResponse.json({ items: mapBooksGoogle(combined) });
+  const headers = new Headers();
+  headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=60');
+  return NextResponse.json({ items: mapBooksGoogle(combined) }, { headers });
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'failed';
     return NextResponse.json({ error: msg }, { status: 500 });

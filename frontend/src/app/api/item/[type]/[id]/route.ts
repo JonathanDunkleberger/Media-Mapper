@@ -74,7 +74,11 @@ export async function GET(_req: Request, { params }: { params: Promise<RawParams
         detail.similar = items;
       } catch {}
     }
-      return NextResponse.json({ item: detail });
+      {
+        const headers = new Headers();
+        headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=60');
+        return NextResponse.json({ item: detail }, { headers });
+      }
     }
     if (type === 'game') {
       // fetch game
@@ -103,7 +107,11 @@ export async function GET(_req: Request, { params }: { params: Promise<RawParams
           detail.similar = mapGamesIGDB(sim);
         } catch {}
       }
-      return NextResponse.json({ item: detail });
+      {
+        const headers = new Headers();
+        headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=60');
+        return NextResponse.json({ item: detail }, { headers });
+      }
     }
     if (type === 'book') {
       const vol = await booksGet(String(id));
@@ -128,7 +136,11 @@ export async function GET(_req: Request, { params }: { params: Promise<RawParams
   const sim = await booksSimilar(vol, 12);
   detail.similar = mapBooksGoogle(sim as GoogleVolumeRaw[]);
       } catch {}
-      return NextResponse.json({ item: detail });
+      {
+        const headers = new Headers();
+        headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=60');
+        return NextResponse.json({ item: detail }, { headers });
+      }
     }
   } catch {
     return NextResponse.json({ error: 'Fetch failed' }, { status: 500 });

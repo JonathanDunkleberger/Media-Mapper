@@ -76,7 +76,9 @@ export async function GET(req: Request) {
       minVotesTopRated: 50,
     });
 
-    return NextResponse.json({ items: processed.slice(0, take) });
+  const headers = new Headers();
+  headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=60');
+  return NextResponse.json({ items: processed.slice(0, take) }, { headers });
   } catch (e: unknown) {
     // Log server-side for diagnostics (won't leak sensitive data unless error message contains it)
     console.error('anime popular route error', e);

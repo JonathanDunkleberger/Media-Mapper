@@ -18,7 +18,9 @@ export async function GET(req: Request) {
     const sort = mode === 'top_rated' ? 'total_rating desc' : 'rating_count desc';
     const body = `fields name,cover.image_id,first_release_date,total_rating,rating_count,genres; sort ${sort}; ${whereClause} limit ${take}; offset ${offset};`;
     const data = await igdb<IGDBGameRaw>('games', body);
-    return NextResponse.json({ items: mapGamesIGDB(data) });
+  const headers = new Headers();
+  headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=60');
+  return NextResponse.json({ items: mapGamesIGDB(data) }, { headers });
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'failed';
     return NextResponse.json({ error: msg }, { status: 500 });
