@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { FaHeart } from 'react-icons/fa';
 import Link from 'next/link';
 import type { KnownMedia } from '../types/media';
-import { isMovie, isTV, isBook, isGame } from '../types/media';
+import { isMovie, isBook, isGame } from '../types/media';
 import { normalizeMediaData, getImageUrl } from '../utils/mediaHelpers';
 
 type MediaCardProps = {
@@ -33,7 +33,10 @@ function FavoriteButton({ id }: { id: string | number }) {
 export function MediaCard({ item }: MediaCardProps) {
   const normalized = normalizeMediaData(item);
   const { id, title, type } = normalized;
-  const imageUrl = getImageUrl(item) || '/placeholder-media.png';
+  // Only call getImageUrl if item is a MediaType
+  const imageUrl = (typeof (item as any).media_type === 'string')
+    ? getImageUrl(item as any)
+    : '/placeholder-media.png';
 
   // Always use normalized type for label and href
   let typeLabel = 'MEDIA';

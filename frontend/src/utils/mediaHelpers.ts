@@ -1,27 +1,27 @@
 // Centralized image URL helper for all media types
-export function getImageUrl(media: any) {
-  // For TMDB (movies/TV)
-  if (media.poster_path) {
-    return `https://image.tmdb.org/t/p/w500${media.poster_path}`;
+import type { MediaType } from '../types/media';
+
+export function getImageUrl(media: MediaType): string {
+  switch (media.media_type) {
+    case 'movie':
+      return media.poster_path
+        ? `https://image.tmdb.org/t/p/w500${media.poster_path}`
+        : '/placeholder-movie.png';
+    case 'game':
+      return media.cover?.image_id
+        ? `https://images.igdb.com/igdb/image/upload/t_cover_big/${media.cover.image_id}.jpg`
+        : '/placeholder-game.png';
+    case 'book':
+      return media.imageLinks?.thumbnail || '/placeholder-book.png';
+    default:
+      return '/placeholder-media.png';
   }
-  // For IGDB (games)
-  if (media.cover?.image_id) {
-    return `https://images.igdb.com/igdb/image/upload/t_cover_big/${media.cover.image_id}.jpg`;
-  }
-  // For Google Books
-  if (media.imageLinks?.thumbnail) {
-    return media.imageLinks.thumbnail;
-  }
-  // Fallback image
-  return '/placeholder-media.png';
 }
-import type { KnownMedia, SearchResult, NormalizedMedia } from '../types/media';
+import type { KnownMedia, NormalizedMedia } from '../types/media';
 
 export function getId(item: KnownMedia): string | number | undefined {
   if ('id' in item && item.id !== undefined) return item.id;
-  if ('key' in item && item.key !== undefined) return item.key;
-  const s = item as SearchResult;
-  if (s.external_id !== undefined) return s.external_id;
+  if ('key' in item && typeof item.key === 'string' && item.key.length > 0) return item.key;
   const t = ('title' in item && item.title) ? item.title : ('name' in item && item.name) ? item.name : undefined;
   return t ?? undefined;
 }
@@ -33,9 +33,9 @@ export function getTitle(item: KnownMedia): string {
 
 
 export function getMediaType(item: KnownMedia): string | undefined {
-  if ('type' in item) return item.type;
-  const s = item as SearchResult;
-  return s.media_type || s.type;
+  if ('media_type' in item) return (item as { media_type?: string }).media_type;
+  if ('type' in item) return (item as { type?: string }).type;
+  return undefined;
 }
 
 export function getField<T = unknown>(item: KnownMedia, field: string): T | undefined {
@@ -67,12 +67,13 @@ export function normalizeMediaData(item: KnownMedia): NormalizedMedia {
     title = String(id);
   }
   // Resolve best image
-  let imageUrl = getImageUrl(item);
+  // Only call getImageUrl if item is a MediaType (has media_type)
+  let imageUrl = (typeof (item as any).media_type === 'string') ? getImageUrl(item as any) : '';
   // Additional deep fallbacks for books (volumeInfo)
   if (!imageUrl && typeof raw.volumeInfo === 'object' && raw.volumeInfo !== null) {
     const volumeInfo = raw.volumeInfo as { imageLinks?: { thumbnail?: string; smallThumbnail?: string } };
     if (volumeInfo.imageLinks) {
-      imageUrl = volumeInfo.imageLinks.thumbnail || volumeInfo.imageLinks.smallThumbnail;
+  imageUrl = volumeInfo.imageLinks.thumbnail ?? volumeInfo.imageLinks.smallThumbnail ?? '';
     }
   }
   if (imageUrl && imageUrl.startsWith('http://')) imageUrl = imageUrl.replace('http://','https://');
