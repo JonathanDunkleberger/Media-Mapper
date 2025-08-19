@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+// Use internal absolute URL helper instead of axios + relative path
+import { fetchInternalAPI } from '@/lib/api';
 import { MediaCard } from './MediaCard';
 import type { KnownMedia } from '../types/media';
 import { getId } from '../utils/mediaHelpers';
@@ -30,26 +31,14 @@ export function MediaCarousel({ title, mediaType, items: itemsProp, sectionId, e
       setInternalLoading(true);
       setError(null);
       try {
-        const response = await axios.get(`/api/popular/${mediaType}`, {
-          signal: controller.signal
-        });
-        setItems(response.data);
-      } catch (err: unknown) {
-        if (axios.isAxiosError(err)) {
-          if (err.name === 'CanceledError' || err.name === 'AbortError') return;
-          setError('Error loading data. Showing fallback.');
-          setItems([{ title: 'Sample Item', id: 1, media_type: 'movie', type: 'movie' }]);
-          console.error(`Error loading ${mediaType}:`, err);
-        } else if (err instanceof Error) {
-          if (err.name === 'CanceledError' || err.name === 'AbortError') return;
-          setError('Error loading data. Showing fallback.');
-          setItems([{ title: 'Sample Item', id: 1, media_type: 'movie', type: 'movie' }]);
-          console.error(`Error loading ${mediaType}:`, err);
-        } else {
-          setError('An unknown error occurred. Showing fallback.');
-          setItems([{ title: 'Sample Item', id: 1, media_type: 'movie', type: 'movie' }]);
-          console.error(`Error loading ${mediaType}:`, err);
-        }
+        const response = await fetchInternalAPI<{ items?: KnownMedia[]; results?: KnownMedia[] }>(`/api/popular/${mediaType}`, { cache: 'no-store', signal: controller.signal });
+        const list = (response.items || response.results || []) as KnownMedia[];
+        setItems(list);
+      } catch (err: any) {
+        if (err?.name === 'CanceledError' || err?.name === 'AbortError') return;
+        setError('Error loading data. Showing fallback.');
+        setItems([{ title: 'Sample Item', id: 1, media_type: 'movie', type: 'movie' }]);
+        console.error(`Error loading ${mediaType}:`, err);
       } finally {
         setInternalLoading(false);
       }
