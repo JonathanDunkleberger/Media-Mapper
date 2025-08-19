@@ -7,7 +7,7 @@ import { FaHeart } from 'react-icons/fa';
 import Link from 'next/link';
 import type { KnownMedia } from '../types/media';
 import { isMovie, isTV, isBook, isGame } from '../types/media';
-import { normalizeMediaData } from '../utils/mediaHelpers';
+import { normalizeMediaData, getImageUrl } from '../utils/mediaHelpers';
 
 type MediaCardProps = {
   item: KnownMedia;
@@ -32,7 +32,8 @@ function FavoriteButton({ id }: { id: string | number }) {
 
 export function MediaCard({ item }: MediaCardProps) {
   const normalized = normalizeMediaData(item);
-  const { id, title, imageUrl, image, type } = normalized;
+  const { id, title, type } = normalized;
+  const imageUrl = getImageUrl(item) || '/placeholder-media.png';
 
   // Always use normalized type for label and href
   let typeLabel = 'MEDIA';
@@ -60,7 +61,7 @@ export function MediaCard({ item }: MediaCardProps) {
   }
 
   // Fallbacks for imageUrl and title
-  const safeImageUrl = typeof imageUrl === 'string' && imageUrl.length > 0 ? imageUrl : 'https://placehold.co/200x300?text=No+Image';
+  const safeImageUrl = typeof imageUrl === 'string' && imageUrl.length > 0 ? imageUrl : '/placeholder-media.png';
   const safeTitle = typeof title === 'string' && title.length > 0 ? title : 'Media Poster';
   const safeId = id ?? safeTitle;
 
@@ -71,7 +72,7 @@ export function MediaCard({ item }: MediaCardProps) {
       tabIndex={0}
     >
       <div className="relative rounded-xl overflow-hidden bg-[var(--xprime-surface)] ring-1 ring-[color-mix(in_oklab,var(--xprime-purple)_35%,#1f153a)] shadow-sm hover:shadow-lg hover:ring-[var(--xprime-purple)] transition-all duration-300">
-        <div className="relative w-full" style={{ aspectRatio: image?.aspectRatio ? image.aspectRatio.toFixed(4) : '2 / 3' }}>
+        <div className="relative w-full" style={{ aspectRatio: '2 / 3' }}>
           <FavoriteButton id={safeId} />
           <Image
             src={safeImageUrl}

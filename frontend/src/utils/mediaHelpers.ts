@@ -1,3 +1,20 @@
+// Centralized image URL helper for all media types
+export function getImageUrl(media: any) {
+  // For TMDB (movies/TV)
+  if (media.poster_path) {
+    return `https://image.tmdb.org/t/p/w500${media.poster_path}`;
+  }
+  // For IGDB (games)
+  if (media.cover?.image_id) {
+    return `https://images.igdb.com/igdb/image/upload/t_cover_big/${media.cover.image_id}.jpg`;
+  }
+  // For Google Books
+  if (media.imageLinks?.thumbnail) {
+    return media.imageLinks.thumbnail;
+  }
+  // Fallback image
+  return '/placeholder-media.png';
+}
 import type { KnownMedia, SearchResult, NormalizedMedia } from '../types/media';
 
 export function getId(item: KnownMedia): string | number | undefined {
@@ -14,42 +31,6 @@ export function getTitle(item: KnownMedia): string {
   return String(t);
 }
 
-export function getImageUrl(item: KnownMedia): string | undefined {
-  const s = item as SearchResult;
-  // Normalized path (primary)
-  if (
-    typeof (s as { image?: { url?: string } }).image === 'object' &&
-    typeof (s as { image?: { url?: string } }).image?.url === 'string'
-  ) {
-    return (s as { image: { url: string } }).image.url;
-  }
-  if (typeof (s as { imageUrl?: string }).imageUrl === 'string') {
-    return (s as { imageUrl: string }).imageUrl;
-  }
-  if (s.cover_image_url) return String(s.cover_image_url);
-  // Poster path support (movies / tv)
-  if ('poster_path' in item && item.poster_path) {
-    const p = String(item.poster_path);
-    if (/^https?:\/\//i.test(p)) return p;
-    if (p.startsWith('/')) return `https://image.tmdb.org/t/p/w500${p}`;
-    return p;
-  }
-  // Books (legacy nested volumeInfo kept minimal)
-  if (
-    typeof (item as { volumeInfo?: { imageLinks?: { thumbnail?: string } } }).volumeInfo === 'object' &&
-    typeof (item as { volumeInfo?: { imageLinks?: { thumbnail?: string } } }).volumeInfo?.imageLinks === 'object' &&
-    typeof (item as { volumeInfo?: { imageLinks?: { thumbnail?: string } } }).volumeInfo?.imageLinks?.thumbnail === 'string'
-  ) {
-    return String((item as { volumeInfo: { imageLinks: { thumbnail: string } } }).volumeInfo.imageLinks.thumbnail).replace('http://','https://');
-  }
-  // Games cover
-  if (s.cover && typeof s.cover === 'object' && typeof s.cover.url === 'string') {
-    return String(s.cover.url).replace('t_thumb', 't_cover_big');
-  }
-  // Background image fallback (games)
-  if (s.background_image) return String(s.background_image);
-  return undefined;
-}
 
 export function getMediaType(item: KnownMedia): string | undefined {
   if ('type' in item) return item.type;

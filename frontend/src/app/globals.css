@@ -1,3 +1,14 @@
+/* Consistent media card styles */
+.media-card {
+  transition: transform 0.2s;
+}
+.media-card:hover {
+  transform: scale(1.05);
+}
+.media-card img {
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
 /* Media tile image styles for Next.js Image best practices */
 .media-tile-image {
   object-fit: cover;
