@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 "use client";
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -16,27 +17,40 @@ export default function MyMediaPage() {
   const backendBase = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3002';
 
   useEffect(() => {
-    if (user) {
-      // Fetch from API
-      (async () => {
+    const fetchFavorites = async () => {
+      if (!user) {
+        // Guest user logic
         try {
-          const token = (await window?.localStorage.getItem('sb-access-token')) || '';
-          const res = await fetch(`${backendBase}/api/favorites`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-          });
-          if (res.ok) {
-            const { favorites } = await res.json();
-            setFavorites(Array.isArray(favorites) ? favorites.map((f: Record<string, unknown>) => 'media' in f ? f.media as KnownMedia : null).filter(Boolean) as KnownMedia[] : []);
-          }
-  } catch { setFavorites([]); }
-      })();
-    } else {
-      // Load from localStorage for guests
+          const raw = localStorage.getItem('guest-favorites');
+          setFavorites(raw ? JSON.parse(raw) : []);
+        } catch {
+          setFavorites([]);
+        }
+        return;
+      }
+
+      // Authenticated user logic
       try {
-        const raw = window.localStorage.getItem('guest-favorites');
-        if (raw) setFavorites(JSON.parse(raw));
-      } catch { setFavorites([]); }
-    }
+        const token = localStorage.getItem('sb-access-token') || '';
+        const res = await fetch(`${backendBase}/api/favorites`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) throw new Error('Failed to fetch favorites');
+        const data = await res.json();
+        if (Array.isArray(data.favorites)) {
+          const validFavorites = data.favorites
+            .map((fav: any) => fav.media)
+            .filter(Boolean);
+          setFavorites(validFavorites as KnownMedia[]);
+        } else {
+          setFavorites([]);
+        }
+      } catch (err) {
+        console.error(err);
+        setFavorites([]);
+      }
+    };
+    fetchFavorites();
   }, [user, backendBase]);
 
   const handleGetRecommendations = async () => {
@@ -58,10 +72,10 @@ export default function MyMediaPage() {
         setError('No recommendations returned');
       }
     } catch (e) {
-      if (e && typeof e === 'object' && 'message' in e && typeof (e as { message?: unknown }).message === 'string') {
-        setError((e as { message: string }).message);
+      if (e instanceof Error) {
+        setError(e.message);
       } else {
-        setError('Unknown error');
+        setError('An unknown error occurred');
       }
     } finally {
       setLoading(false);

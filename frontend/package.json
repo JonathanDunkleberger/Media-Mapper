@@ -3,12 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint",
-    "test": "vitest run",
-    "test:watch": "vitest",
+  "dev": "next dev --turbopack",
+  "build": "next build",
+  "build:strict": "next build && tsc --noEmit --strict",
+  "type-check": "tsc --noEmit",
+  "start": "next start",
+  "lint": "next lint",
+  "test": "vitest run",
+  "test:watch": "vitest",
   "approve-builds": "pnpm install --ignore-scripts=false"
   },
   "dependencies": {

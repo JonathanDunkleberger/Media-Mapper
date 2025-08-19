@@ -32,9 +32,9 @@ export function MediaCarousel({ title, mediaType, items: itemsProp, sectionId, e
         const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/${mediaType}`);
         setItems(response.data);
       } catch (err) {
-        setError('Error loading data. Showing fallback.');
-        setItems([{ title: 'Sample Item', id: 1 }]);
-        console.error(`Error loading ${mediaType}:`, err);
+  setError('Error loading data. Showing fallback.');
+  setItems([{ title: 'Sample Item', id: 1, media_type: 'movie', type: 'movie' }]);
+  console.error(`Error loading ${mediaType}:`, err);
       } finally {
         setInternalLoading(false);
       }

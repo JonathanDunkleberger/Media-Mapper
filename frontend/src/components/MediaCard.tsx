@@ -59,7 +59,7 @@ export function MediaCard({ item }: MediaCardProps) {
       href = `/book/${id}`;
       break;
     default:
-      typeLabel = typeof type === 'string' ? type.toUpperCase() : 'MEDIA';
+  typeLabel = typeof type === 'string' && type ? (type as string).toUpperCase() : 'MEDIA';
       href = '#';
   }
 

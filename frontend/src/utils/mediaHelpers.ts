@@ -1,20 +1,35 @@
 // Centralized image URL helper for all media types
 
-export function getImageUrl(media: MediaType): string {
-  switch (media.media_type) {
-    case 'movie':
-      return media.poster_path
-        ? `https://image.tmdb.org/t/p/w500${media.poster_path}`
-        : '/placeholder-movie.png';
-    case 'game':
-      return media.cover?.image_id
-        ? `https://images.igdb.com/igdb/image/upload/t_cover_big/${media.cover.image_id}.jpg`
-        : '/placeholder-game.png';
-    case 'book':
-      return media.imageLinks?.thumbnail || '/placeholder-book.png';
-    default:
-      return '/placeholder-media.png';
+
+
+export function getImageUrl(media: KnownMedia): string {
+  // NormalizedMedia: prefer imageUrl, cover_image_url, poster_path, background_image
+  if ('imageUrl' in media && typeof media.imageUrl === 'string') return media.imageUrl;
+  if ('cover_image_url' in media && typeof media.cover_image_url === 'string') return media.cover_image_url;
+  if ('poster_path' in media && typeof media.poster_path === 'string') return `https://image.tmdb.org/t/p/w500${media.poster_path}`;
+  if ('background_image' in media && typeof media.background_image === 'string') return media.background_image;
+
+  // MediaItem type guards
+  if (isMovie(media)) {
+    return media.poster_path
+      ? `https://image.tmdb.org/t/p/w500${media.poster_path}`
+      : '/placeholder-movie.png';
   }
+  if (isGame(media)) {
+    return media.cover && media.cover.image_id
+      ? `https://images.igdb.com/igdb/image/upload/t_cover_big/${media.cover.image_id}.jpg`
+      : '/placeholder-game.png';
+  }
+  if (isBook(media)) {
+    return media.imageLinks && media.imageLinks.thumbnail
+      ? media.imageLinks.thumbnail
+      : '/placeholder-book.png';
+  }
+
+  // Fallback for objects with imageLinks (legacy)
+  if ('imageLinks' in media && media.imageLinks && typeof media.imageLinks === 'object' && 'thumbnail' in media.imageLinks && typeof media.imageLinks.thumbnail === 'string') return media.imageLinks.thumbnail;
+
+  return '/placeholder-media.png';
 }
 import type { KnownMedia, NormalizedMedia, MediaType } from '../types/media';
 import { isMovie, isBook, isGame } from '../types/media';
@@ -89,9 +104,9 @@ export function normalizeMediaData(item: KnownMedia): NormalizedMedia {
   // Only allow valid media_type values
   const allowedTypes = ['movie', 'tv', 'book', 'game'] as const;
   let media_type: 'movie' | 'tv' | 'book' | 'game' = 'movie';
-  if (allowedTypes.includes(type as any)) {
+  if (allowedTypes.includes(type as 'movie' | 'tv' | 'book' | 'game')) {
     media_type = type as 'movie' | 'tv' | 'book' | 'game';
-  } else if (typeof raw.media_type === 'string' && allowedTypes.includes(raw.media_type as any)) {
+  } else if (typeof raw.media_type === 'string' && allowedTypes.includes(raw.media_type as 'movie' | 'tv' | 'book' | 'game')) {
     media_type = raw.media_type as 'movie' | 'tv' | 'book' | 'game';
   } else {
     media_type = 'movie'; // fallback, or pick another default

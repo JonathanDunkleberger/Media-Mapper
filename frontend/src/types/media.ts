@@ -12,6 +12,7 @@ export interface MediaItem {
   imageLinks?: {
     thumbnail: string;
   };
+  media_type: 'movie' | 'tv' | 'book' | 'game';
 }
 
 export interface Movie extends MediaItem {

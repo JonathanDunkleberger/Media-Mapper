@@ -19,23 +19,22 @@ interface HitsDropdownProps {
   backendBase: string;
 }
 
+
 function extractTitle(hit: KnownMedia): string {
-  return (
-    (hit as any).title ||
-    (hit as any).name ||
-    (typeof (hit as any).key === 'string' ? (hit as any).key : '') ||
-    ''
-  );
+  if ('title' in hit && typeof hit.title === 'string' && hit.title) return hit.title;
+  if ('name' in hit && typeof hit.name === 'string' && hit.name) return hit.name;
+  if ('key' in hit && typeof hit.key === 'string' && hit.key) return hit.key;
+  return '';
 }
 
+
 function extractImage(hit: KnownMedia): string {
-  const possible: (string | undefined)[] = [
-    typeof (hit as any).image_url === 'string' ? (hit as any).image_url : undefined,
-    typeof (hit as any).cover_image_url === 'string' ? (hit as any).cover_image_url : undefined,
-    typeof (hit as any).poster_path === 'string' ? (hit as any).poster_path : undefined,
-    (hit as any).imageLinks && typeof (hit as any).imageLinks.thumbnail === 'string' ? (hit as any).imageLinks.thumbnail : undefined,
-    typeof (hit as any).background_image === 'string' ? (hit as any).background_image : undefined,
-  ];
+  const possible: (string | undefined)[] = [];
+  if ('image_url' in hit && typeof hit.image_url === 'string') possible.push(hit.image_url);
+  if ('cover_image_url' in hit && typeof hit.cover_image_url === 'string') possible.push(hit.cover_image_url);
+  if ('poster_path' in hit && typeof hit.poster_path === 'string') possible.push(hit.poster_path);
+  if ('imageLinks' in hit && hit.imageLinks && typeof hit.imageLinks === 'object' && 'thumbnail' in hit.imageLinks && typeof hit.imageLinks.thumbnail === 'string') possible.push(hit.imageLinks.thumbnail);
+  if ('background_image' in hit && typeof hit.background_image === 'string') possible.push(hit.background_image);
   const chosen = possible.find(Boolean);
   if (!chosen) return 'https://placehold.co/56x84';
   if (chosen.startsWith('http')) return chosen;
@@ -43,8 +42,11 @@ function extractImage(hit: KnownMedia): string {
   return chosen.startsWith('/t') ? `https://image.tmdb.org/t/p/w185${chosen}` : chosen;
 }
 
+
 function extractType(hit: KnownMedia): string | undefined {
-  return (hit as any).type || (hit as any).media_type || undefined;
+  if ('type' in hit && typeof hit.type === 'string') return hit.type;
+  if ('media_type' in hit && typeof hit.media_type === 'string') return hit.media_type;
+  return undefined;
 }
 
 function HitsDropdown({ onSelect, close, query, loading, error, results, backendBase }: HitsDropdownProps) {
@@ -58,8 +60,12 @@ function HitsDropdown({ onSelect, close, query, loading, error, results, backend
         const title = extractTitle(hit);
         const mediaType = extractType(hit) || 'movie';
         const img = extractImage(hit);
-  const key = `${mediaType}_${(hit as any).objectID || (hit as any).external_id || hit.id || title}_${idx}`;
-  const selectedItem: KnownMedia = { ...hit, title, type: mediaType as 'movie' | 'tv' | 'book' | 'game' };
+        let id = '';
+        if ('objectID' in hit && hit.objectID) id = String(hit.objectID);
+        else if ('external_id' in hit && hit.external_id) id = String(hit.external_id);
+        else if ('id' in hit && hit.id) id = String(hit.id);
+        const key = `${mediaType}_${id || title}_${idx}`;
+        const selectedItem: KnownMedia = { ...hit, title, type: mediaType as 'movie' | 'tv' | 'book' | 'game' };
         return (
           <li
             key={key}
@@ -142,10 +148,13 @@ export function SearchBar({ onSelect }: SearchBarProps) {
         const combined: KnownMedia[] = [];
         for (const src of [backendRes, algoliaRes]) {
           for (const item of src) {
-            // Use explicit property access and type guards
+            // Use type guards for uniqueKey
             let type = '';
-            if ('type' in item && typeof item.type === 'string') type = item.type;
-            else if ('media_type' in item && typeof item.media_type === 'string') type = item.media_type;
+            if ('media_type' in item && (item.media_type === 'movie' || item.media_type === 'tv' || item.media_type === 'book' || item.media_type === 'game')) {
+              type = item.media_type;
+            } else if ('type' in item && typeof item.type === 'string') {
+              type = item.type;
+            }
             let id = '';
             if ('external_id' in item && item.external_id) id = String(item.external_id);
             else if ('id' in item && item.id) id = String(item.id);
@@ -170,40 +179,88 @@ export function SearchBar({ onSelect }: SearchBarProps) {
     };
   }, [query, algoliaIndex, backendBase]);
 
+  // Perform hybrid search (debounced)
+  useEffect(() => {
+    if (!query) { setResults([]); setLoading(false); setError(null); return; }
+    if (!algoliaIndex) { setError('Search unavailable'); return; }
+    const debounce = setTimeout(() => {
+      setLoading(true); setError(null);
+      const algoliaController = new AbortController();
+      const backendController = new AbortController();
+      abortRef.current.abortAlgolia = () => algoliaController.abort();
+      abortRef.current.abortBackend = () => backendController.abort();
+
+      const pAlgolia = algoliaIndex.search<KnownMedia>(query, { hitsPerPage: 20 })
+        .then((r: AlgoliaSearchResponse<KnownMedia>) => r.hits)
+        .catch((e: unknown) => { throw new Error('Algolia: ' + (e instanceof Error ? e.message : 'failed')); });
+      const backendUrl = `${backendBase}/api/search?q=${encodeURIComponent(query)}&type=all`;
+      const pBackend = fetch(backendUrl, { signal: backendController.signal })
+        .then(r => r.ok ? r.json() : Promise.reject(new Error('Backend HTTP ' + r.status)))
+        .catch((e: unknown) => { throw new Error('Live: ' + (e instanceof Error ? e.message : 'failed')); });
+
+      Promise.allSettled([pBackend, pAlgolia]).then(settled => {
+        const backendRes = settled[0].status === 'fulfilled' ? settled[0].value as KnownMedia[] : [];
+        const algoliaRes = settled[1].status === 'fulfilled' ? settled[1].value as KnownMedia[] : [];
+        const errs: string[] = [];
+        if (settled[0].status === 'rejected') errs.push((settled[0].reason as Error).message || 'live error');
+        if (settled[1].status === 'rejected') errs.push((settled[1].reason as Error).message || 'algolia error');
+        const seen = new Set<string>();
+        const combined: KnownMedia[] = [];
+        for (const src of [backendRes, algoliaRes]) {
+          for (const item of src) {
+            // Use type guards for uniqueKey
+            let type = '';
+            if ('media_type' in item && (item.media_type === 'movie' || item.media_type === 'tv' || item.media_type === 'book' || item.media_type === 'game')) {
+              type = item.media_type;
+            } else if ('type' in item && typeof item.type === 'string') {
+              type = item.type;
+            }
+            let id = '';
+            if ('external_id' in item && item.external_id) id = String(item.external_id);
+            else if ('id' in item && item.id) id = String(item.id);
+            else if ('objectID' in item && item.objectID) id = String(item.objectID);
+            let title = '';
+            if ('title' in item && item.title) title = String(item.title);
+            else if ('name' in item && item.name) title = String(item.name);
+            let key = '';
+            if ('key' in item && item.key) key = String(item.key);
+            const uniqueKey = `${type}_${id || title || key}`;
+            if (!seen.has(uniqueKey)) { seen.add(uniqueKey); combined.push(item); }
+          }
+        }
+        setResults(combined.slice(0, 30));
+        setError(errs.length ? errs.join(' | ') : null);
+      }).finally(() => setLoading(false));
+    }, 200);
+    return () => {
+      clearTimeout(debounce);
+      abortRef.current.abortAlgolia?.();
+      abortRef.current.abortBackend?.();
+    };
+  }, [query, algoliaIndex, backendBase]);
+
+  // --- RETURN THE JSX ---
   return (
     <div ref={containerRef} className="w-full relative">
-      <div className="relative">
-        <input
-          ref={inputRef}
-          value={query}
-          onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
-          placeholder="Search for any media..."
-          className="w-full rounded-md border border-gray-700 bg-gray-800 text-white py-3 px-4 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          autoComplete="off"
-          spellCheck={false}
-        />
-        {query && (
-          <button
-            type="button"
-            onClick={() => { setQuery(''); setResults([]); setOpen(false); inputRef.current?.focus(); }}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200 text-xs"
-          >Clear</button>
-        )}
-      </div>
+      <input
+        ref={inputRef}
+        type="text"
+        className="w-full rounded-md border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        placeholder="Search movies, books, games..."
+        value={query}
+        onChange={e => { setQuery(e.target.value); setOpen(true); }}
+        onFocus={() => setOpen(true)}
+        autoComplete="off"
+      />
       {open && (
         <HitsDropdown
-          backendBase={backendBase}
-          onSelect={(item) => {
-            onSelect(item);
-            setOpen(false);
-            setQuery('');
-            setResults([]);
-          }}
+          onSelect={onSelect}
           close={() => setOpen(false)}
           query={query}
           loading={loading}
           error={error}
           results={results}
+          backendBase={backendBase}
         />
       )}
     </div>
