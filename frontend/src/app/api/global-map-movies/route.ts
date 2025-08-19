@@ -20,14 +20,21 @@ async function fetchTopMoviesByCountry(countryCode: string, apiKey: string): Pro
   try {
     const res = await fetch(url, { next: { revalidate: 3600 } });
     if (!res.ok) return [];
-    const json = await res.json();
-    return (json.results || []).slice(0, 3).map((movie: any) => ({
-      id: movie.id,
-      title: movie.title,
-      poster: movie.poster_path ? `https://image.tmdb.org/t/p/w200${movie.poster_path}` : null,
-      country: countryCode,
-      coords: COUNTRY_COORDS[countryCode] || null
-    }));
+    const json: unknown = await res.json();
+    const arr: unknown[] = (json && typeof json === 'object' && 'results' in json && Array.isArray((json as any).results)) ? (json as any).results : [];
+    return arr.slice(0, 3).map((raw) => {
+      const m = raw as { id?: unknown; title?: unknown; poster_path?: unknown };
+      const id = typeof m.id === 'number' ? m.id : Math.floor(Math.random() * 1e9);
+      const title = typeof m.title === 'string' ? m.title : 'Unknown';
+      const poster_path = typeof m.poster_path === 'string' ? m.poster_path : null;
+      return {
+        id,
+        title,
+        poster: poster_path ? `https://image.tmdb.org/t/p/w200${poster_path}` : null,
+        country: countryCode,
+        coords: COUNTRY_COORDS[countryCode] || null
+      } as MovieResult;
+    });
   } catch {
     return [];
   }
@@ -44,7 +51,8 @@ export async function GET() {
   try {
     const movies = await fetchGlobalTopMovies();
     return NextResponse.json({ movies });
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message || 'Failed to fetch global map movies' }, { status: 500 });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : 'Failed to fetch global map movies';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

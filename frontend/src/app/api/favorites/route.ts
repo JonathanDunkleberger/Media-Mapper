@@ -7,13 +7,14 @@ const supabase = createClient(
 );
 
 // GET /api/favorites
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
   try {
     const { data, error } = await supabase.from('favorites').select('*');
     if (error) throw error;
     return NextResponse.json({ favorites: data });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
@@ -24,7 +25,8 @@ export async function POST(req: NextRequest) {
     const { data, error } = await supabase.from('favorites').insert([body]);
     if (error) throw error;
     return NextResponse.json({ success: true, favorite: data });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
