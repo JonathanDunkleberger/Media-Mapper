@@ -1,6 +1,7 @@
 ;(async () => { try { await import('server-only'); } catch { /* ignored */ }})();
 
-const GOOGLE_KEY = process.env.GOOGLE_BOOKS_API_KEY;
+import { env } from './env';
+const GOOGLE_KEY = env.GOOGLE_BOOKS_API_KEY;
 
 export interface GoogleVolumeRaw {
   id: string;
