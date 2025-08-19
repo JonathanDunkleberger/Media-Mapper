@@ -1,13 +1,14 @@
 // Prevent Next.js server-only behavior errors under Vitest by conditional dynamic import
 ;(async () => { try { await import('server-only'); } catch { /* ignored in test */ }})();
+import { env } from './env';
 
 let igdbTokenCache: { token: string; exp: number } | null = null;
 
 async function getIGDBToken(): Promise<string> {
   const now = Date.now();
   if (igdbTokenCache && igdbTokenCache.exp > now + 60_000) return igdbTokenCache.token;
-  const clientId = process.env.TWITCH_CLIENT_ID;
-  const clientSecret = process.env.TWITCH_CLIENT_SECRET;
+  const clientId = env.TWITCH_CLIENT_ID;
+  const clientSecret = env.TWITCH_CLIENT_SECRET;
   if (!clientId || !clientSecret) throw new Error('Missing Twitch credentials');
   const resp = await fetch(`https://id.twitch.tv/oauth2/token?client_id=${clientId}&client_secret=${clientSecret}&grant_type=client_credentials`, { method: 'POST' });
   if (!resp.ok) throw new Error('Failed IGDB token');
@@ -18,7 +19,7 @@ async function getIGDBToken(): Promise<string> {
 
 export async function igdb<T = unknown>(endpoint: string, body: string): Promise<T[]> {
   const token = await getIGDBToken();
-  const clientId = process.env.TWITCH_CLIENT_ID!;
+  const clientId = env.TWITCH_CLIENT_ID;
   const resp = await fetch(`https://api.igdb.com/v4/${endpoint}`, {
     method: 'POST',
     headers: {

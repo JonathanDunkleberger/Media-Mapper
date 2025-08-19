@@ -1,8 +1,8 @@
+import { getBaseUrl } from './env';
+
 // Internal API fetch helper constructing an absolute URL for SSR/Edge.
-// Prioritizes Vercel-provided deployment URL; otherwise falls back to localhost.
 export function internalBaseUrl(): string {
-  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
-  return 'http://localhost:3000';
+  return getBaseUrl();
 }
 
 export async function fetchInternalAPI<T = unknown>(endpoint: string, init?: RequestInit): Promise<T> {

@@ -1,8 +1,8 @@
 // Server-only helper for TMDB (supports v3 key or v4 bearer token)
-// Usage: set either TMDB_V4_TOKEN (preferred) OR TMDB_API_KEY in env (server-side only)
+import { env } from './env';
 
-const TMDB_V4 = process.env.TMDB_V4_TOKEN; // long JWT-like token (Bearer)
-const TMDB_V3 = process.env.TMDB_API_KEY;  // short key, used as ?api_key=
+const TMDB_V4 = env.TMDB_V4_TOKEN; // long JWT-like token (Bearer)
+const TMDB_V3 = env.TMDB_API_KEY;  // short key, used as ?api_key=
 
 function authHeaders() {
   if (TMDB_V4) return { Authorization: `Bearer ${TMDB_V4}` } as Record<string, string>;
