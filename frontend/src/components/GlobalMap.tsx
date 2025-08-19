@@ -20,16 +20,18 @@ export default function GlobalMap() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    const controller = new AbortController();
     (async () => {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(`${backendBase}/api/global-map-movies`);
+        const res = await fetch(`${backendBase}/api/global-map-movies`, { signal: controller.signal });
         if (!res.ok) throw new Error('Failed to fetch map data');
         const data = await res.json();
         setMovies(Array.isArray(data.movies) ? data.movies : []);
       } catch (e) {
         if (e instanceof Error) {
+          if (e.name === 'AbortError') return;
           setError(e.message);
         } else {
           setError('An unknown error occurred');
@@ -38,6 +40,9 @@ export default function GlobalMap() {
         setLoading(false);
       }
     })();
+    return () => {
+      controller.abort();
+    };
   }, []);
 
   function posterIcon(url: string) {

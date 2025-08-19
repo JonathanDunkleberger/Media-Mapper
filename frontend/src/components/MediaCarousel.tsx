@@ -25,21 +25,28 @@ export function MediaCarousel({ title, mediaType, items: itemsProp, sectionId, e
   useEffect(() => {
     if (itemsProp) return;
     if (!mediaType) return;
+    const controller = new AbortController();
     const fetchMedia = async () => {
       setInternalLoading(true);
       setError(null);
       try {
-        const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/${mediaType}`);
+        const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/${mediaType}`, {
+          signal: controller.signal
+        });
         setItems(response.data);
-      } catch (err) {
-  setError('Error loading data. Showing fallback.');
-  setItems([{ title: 'Sample Item', id: 1, media_type: 'movie', type: 'movie' }]);
-  console.error(`Error loading ${mediaType}:`, err);
+      } catch (err: any) {
+        if (err.name === 'CanceledError' || err.name === 'AbortError') return;
+        setError('Error loading data. Showing fallback.');
+        setItems([{ title: 'Sample Item', id: 1, media_type: 'movie', type: 'movie' }]);
+        console.error(`Error loading ${mediaType}:`, err);
       } finally {
         setInternalLoading(false);
       }
     };
     fetchMedia();
+    return () => {
+      controller.abort();
+    };
   }, [mediaType, itemsProp]);
 
   const showEmpty = !loading && items.length === 0;

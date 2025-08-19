@@ -13,16 +13,24 @@ export default function MediaDetailPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    const controller = new AbortController();
     setLoading(true);
     setError(null);
-  fetch(`http://localhost:3001/api/details/${mediaType}/${id}`)
+    fetch(`http://localhost:3001/api/details/${mediaType}/${id}`,
+      { signal: controller.signal })
       .then(res => res.json())
       .then(json => {
-  if (json.success) setData(json.data as KnownMedia);
+        if (json.success) setData(json.data as KnownMedia);
         else setError(json.message || 'Not found');
       })
-      .catch(() => setError('Failed to fetch details.'))
+      .catch((err) => {
+        if (err.name === 'AbortError') return;
+        setError('Failed to fetch details.');
+      })
       .finally(() => setLoading(false));
+    return () => {
+      controller.abort();
+    };
   }, [mediaType, id]);
 
   if (loading) return <div className="text-center py-20 text-xl">Loading...</div>;

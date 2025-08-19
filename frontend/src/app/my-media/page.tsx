@@ -17,6 +17,7 @@ export default function MyMediaPage() {
   const backendBase = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3002';
 
   useEffect(() => {
+    const controller = new AbortController();
     const fetchFavorites = async () => {
       if (!user) {
         // Guest user logic
@@ -33,7 +34,8 @@ export default function MyMediaPage() {
       try {
         const token = localStorage.getItem('sb-access-token') || '';
         const res = await fetch(`${backendBase}/api/favorites`, {
-          headers: { 'Authorization': `Bearer ${token}` }
+          headers: { 'Authorization': `Bearer ${token}` },
+          signal: controller.signal
         });
         if (!res.ok) throw new Error('Failed to fetch favorites');
         const data = await res.json();
@@ -46,11 +48,15 @@ export default function MyMediaPage() {
           setFavorites([]);
         }
       } catch (err) {
+        if ((err as Error).name === 'AbortError') return;
         console.error(err);
         setFavorites([]);
       }
     };
     fetchFavorites();
+    return () => {
+      controller.abort();
+    };
   }, [user, backendBase]);
 
   const handleGetRecommendations = async () => {
