@@ -1,27 +1,14 @@
 // Prevent Next.js server-only behavior errors under Vitest by conditional dynamic import
 ;(async () => { try { await import('server-only'); } catch { /* ignored in test */ }})();
-import { env } from './env';
+import { envServer } from '@/lib/env-server';
 import { fetchJSON, HttpError } from './http';
+import { getIgdbToken } from './igdb-token';
 
-let igdbTokenCache: { token: string; exp: number } | null = null;
-
-async function getIGDBToken(): Promise<string> {
-  const now = Date.now();
-  if (igdbTokenCache && igdbTokenCache.exp > now + 60_000) return igdbTokenCache.token;
-  const clientId = env.TWITCH_CLIENT_ID;
-  const clientSecret = env.TWITCH_CLIENT_SECRET;
-  if (!clientId || !clientSecret) throw new Error('Missing Twitch credentials');
-  const json = await fetchJSON<{ access_token: string; expires_in: number }>(
-    `https://id.twitch.tv/oauth2/token?client_id=${clientId}&client_secret=${clientSecret}&grant_type=client_credentials`,
-    { method: 'POST' }
-  );
-  igdbTokenCache = { token: json.access_token, exp: now + json.expires_in * 1000 };
-  return json.access_token;
-}
+// Token retrieval handled by getIgdbToken (memory cache or KV alternative)
 
 export async function igdb<T = unknown>(endpoint: string, body: string): Promise<T[]> {
-  const token = await getIGDBToken();
-  const clientId = env.TWITCH_CLIENT_ID;
+  const token = await getIgdbToken();
+  const clientId = envServer.TWITCH_CLIENT_ID;
   try {
     return await fetchJSON<T[]>(`https://api.igdb.com/v4/${endpoint}`, {
       method: 'POST',
