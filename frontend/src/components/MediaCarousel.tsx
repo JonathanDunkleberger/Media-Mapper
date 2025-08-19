@@ -12,18 +12,21 @@ interface MediaCarouselProps {
   items?: KnownMedia[];
   sectionId?: string;
   emptyMessage?: string;
+  loading?: boolean;
 }
 
-export function MediaCarousel({ title, mediaType, items: itemsProp, sectionId, emptyMessage = 'No items available.' }: MediaCarouselProps) {
+export function MediaCarousel({ title, mediaType, items: itemsProp, sectionId, emptyMessage = 'No items available.', loading: loadingProp }: MediaCarouselProps) {
   const [items, setItems] = useState<KnownMedia[]>(itemsProp ?? []);
-  const [loading, setLoading] = useState(!itemsProp);
+  const [internalLoading, setInternalLoading] = useState(!itemsProp);
   const [error, setError] = useState<string | null>(null);
+  // Use loading prop if provided, otherwise use internal state
+  const loading = typeof loadingProp === 'boolean' ? loadingProp : internalLoading;
 
   useEffect(() => {
     if (itemsProp) return;
     if (!mediaType) return;
     const fetchMedia = async () => {
-      setLoading(true);
+      setInternalLoading(true);
       setError(null);
       try {
         const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/${mediaType}`);
@@ -33,7 +36,7 @@ export function MediaCarousel({ title, mediaType, items: itemsProp, sectionId, e
         setItems([{ title: 'Sample Item', id: 1 }]);
         console.error(`Error loading ${mediaType}:`, err);
       } finally {
-        setLoading(false);
+        setInternalLoading(false);
       }
     };
     fetchMedia();
