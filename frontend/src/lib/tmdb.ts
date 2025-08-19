@@ -1,5 +1,6 @@
 // Server-only helper for TMDB (supports v3 key or v4 bearer token)
 import { env } from './env';
+import { fetchJSON, HttpError } from './http';
 
 const TMDB_V4 = env.TMDB_V4_TOKEN; // long JWT-like token (Bearer)
 const TMDB_V3 = env.TMDB_API_KEY;  // short key, used as ?api_key=
@@ -21,12 +22,12 @@ export async function tmdbJson<T = unknown>(path: string, searchParams?: Record<
   const url = new URL(`${base}${path}`);
   if (searchParams) Object.entries(searchParams).forEach(([k, v]) => url.searchParams.set(k, v));
   const finalUrl = withApiKey(url.toString());
-  const res = await fetch(finalUrl, { headers: authHeaders(), cache: 'no-store' });
-  if (!res.ok) {
-    const sample = (await res.text()).slice(0, 200);
-    throw new Error(`TMDB ${res.status}: ${sample}`);
+  try {
+    return await fetchJSON<T>(finalUrl, { headers: authHeaders(), cache: 'no-store' });
+  } catch (e) {
+    if (e instanceof HttpError) throw new Error(`TMDB ${e.status}: ${e.body}`);
+    throw e;
   }
-  return (await res.json()) as T;
 }
 
 export function tmdbImage(path: string | null | undefined, size: string = 'w300') {

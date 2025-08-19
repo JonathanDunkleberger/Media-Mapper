@@ -1,6 +1,7 @@
 ;(async () => { try { await import('server-only'); } catch { /* ignored */ }})();
 
 import { env } from './env';
+import { fetchJSON, HttpError } from './http';
 const GOOGLE_KEY = env.GOOGLE_BOOKS_API_KEY;
 
 export interface GoogleVolumeRaw {
@@ -17,9 +18,12 @@ export interface GoogleVolumeRaw {
 }
 
 async function gjson<T>(url: string): Promise<T> {
-  const r = await fetch(url, { next: { revalidate: 3600 } });
-  if (!r.ok) throw new Error(`Books ${r.status}`);
-  return r.json() as Promise<T>;
+  try {
+    return await fetchJSON<T>(url, { next: { revalidate: 3600 } });
+  } catch (e) {
+    if (e instanceof HttpError) throw new Error(`Books ${e.status}: ${e.body}`);
+    throw e;
+  }
 }
 
 export async function booksSearch(q: string | string[], max = 10, startIndex = 0, orderBy?: 'relevance' | 'newest'): Promise<GoogleVolumeRaw[]> {
