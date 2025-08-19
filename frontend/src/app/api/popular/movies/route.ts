@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { tmdbJson, tmdbImage } from '@/lib/tmdb';
+export const revalidate = 3600;
 
 interface TMDBMovie { id: number; title?: string; poster_path?: string | null; }
 

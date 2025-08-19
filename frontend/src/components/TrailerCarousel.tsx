@@ -1,5 +1,5 @@
 import React from 'react';
-import Image from 'next/image';
+import { SafeImage } from './SafeImage';
 import type { KnownMedia } from '../types/media';
 import { getField } from '../utils/mediaHelpers';
 
@@ -22,7 +22,7 @@ export function TrailerCarousel({ data, mediaType }: { data: KnownMedia | null; 
             <a key={vidKey} href={`https://youtube.com/watch?v=${vidKey}`} target="_blank" rel="noopener noreferrer" className="block w-64 flex-shrink-0">
               <div className="aspect-video bg-gray-800 rounded-lg overflow-hidden mb-2">
                 {/* YouTube thumbnail */}
-                <Image src={thumb} alt={vid.name ?? ''} width={256} height={144} className="w-full h-full object-cover" />
+                <SafeImage src={thumb} alt={vid.name ?? ''} w={256} h={144} className="w-full h-full object-cover" />
               </div>
               <div className="text-gray-200 text-sm truncate">{vid.name}</div>
             </a>

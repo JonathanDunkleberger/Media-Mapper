@@ -2,36 +2,18 @@
 import Image from 'next/image';
 import { useState } from 'react';
 
-export interface SafeImageProps {
-  src: string | null | undefined;
-  alt: string;
-  width: number;
-  height: number;
-  className?: string;
-  priority?: boolean;
-}
-
-export function SafeImage({ src, alt, width, height, className, priority }: SafeImageProps) {
+export function SafeImage(props: { src?: string | null; alt: string; w: number; h: number; className?: string }) {
+  const { src, alt, w, h, className } = props;
   const [broken, setBroken] = useState(false);
-  const valid = !!src && !broken;
-  return valid ? (
+  const finalSrc = !src || broken ? '/placeholder-poster.png' : src;
+  return (
     <Image
-      src={src!}
+      src={finalSrc}
       alt={alt}
-      width={width}
-      height={height}
+      width={w}
+      height={h}
       className={className}
-      priority={priority}
       onError={() => setBroken(true)}
-    />
-  ) : (
-    <Image
-      src="/placeholder-poster.png"
-      alt={alt}
-      width={width}
-      height={height}
-      className={className}
-      priority={priority}
     />
   );
 }

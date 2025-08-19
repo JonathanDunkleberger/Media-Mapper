@@ -74,7 +74,7 @@ function HitsDropdown({ onSelect, close, query, loading, error, results }: HitsD
               close();
             }}
           >
-            <SafeImage src={img} alt={title} width={48} height={64} className="w-12 h-16 object-cover rounded" />
+            <SafeImage src={img} alt={title} w={48} h={64} className="w-12 h-16 object-cover rounded" />
             <div className="flex flex-col">
               <span className="text-sm font-medium">{title}</span>
               <span className="text-[11px] uppercase tracking-wide text-gray-400">{mediaType}</span>
@@ -118,7 +118,7 @@ export function SearchBar({ onSelect }: SearchBarProps) {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  // Single debounced hybrid search (deduplicated)
+  // Single debounced hybrid search (deduplicated) with proper abort snapshot
   useEffect(() => {
     if (!query) { setResults([]); setLoading(false); setError(null); return; }
     if (!algoliaIndex) { setError('Search unavailable'); return; }
@@ -126,13 +126,15 @@ export function SearchBar({ onSelect }: SearchBarProps) {
       setLoading(true); setError(null);
       const algoliaController = new AbortController();
       const backendController = new AbortController();
-      abortRef.current.abortAlgolia = () => algoliaController.abort();
-      abortRef.current.abortBackend = () => backendController.abort();
+      const localAbortAlgolia = () => algoliaController.abort();
+      const localAbortBackend = () => backendController.abort();
+      abortRef.current.abortAlgolia = localAbortAlgolia;
+      abortRef.current.abortBackend = localAbortBackend;
 
       const pAlgolia = algoliaIndex.search<KnownMedia>(query, { hitsPerPage: 20 })
         .then((r: AlgoliaSearchResponse<KnownMedia>) => r.hits)
         .catch((e: unknown) => { throw new Error('Algolia: ' + (e instanceof Error ? e.message : 'failed')); });
-  const backendUrl = `/api/search?q=${encodeURIComponent(query)}&type=all`;
+      const backendUrl = `/api/search?q=${encodeURIComponent(query)}&type=all`;
       const pBackend = fetch(backendUrl, { signal: backendController.signal })
         .then(r => r.ok ? r.json() : Promise.reject(new Error('Backend HTTP ' + r.status)))
         .catch((e: unknown) => { throw new Error('Live: ' + (e instanceof Error ? e.message : 'failed')); });
@@ -147,13 +149,9 @@ export function SearchBar({ onSelect }: SearchBarProps) {
         const combined: KnownMedia[] = [];
         for (const src of [backendRes, algoliaRes]) {
           for (const item of src) {
-            // Use type guards for uniqueKey
             let type = '';
-            if ('media_type' in item && (item.media_type === 'movie' || item.media_type === 'tv' || item.media_type === 'book' || item.media_type === 'game')) {
-              type = item.media_type;
-            } else if ('type' in item && typeof item.type === 'string') {
-              type = item.type;
-            }
+            if ('media_type' in item && (item.media_type === 'movie' || item.media_type === 'tv' || item.media_type === 'book' || item.media_type === 'game')) type = item.media_type;
+            else if ('type' in item && typeof item.type === 'string') type = item.type;
             let id = '';
             if ('external_id' in item && item.external_id) id = String(item.external_id);
             else if ('id' in item && item.id) id = String(item.id);
@@ -173,8 +171,9 @@ export function SearchBar({ onSelect }: SearchBarProps) {
     }, 200);
     return () => {
       clearTimeout(debounce);
-      abortRef.current.abortAlgolia?.();
-      abortRef.current.abortBackend?.();
+      const abortors = abortRef.current;
+      abortors.abortAlgolia?.();
+      abortors.abortBackend?.();
     };
   }, [query, algoliaIndex]);
 

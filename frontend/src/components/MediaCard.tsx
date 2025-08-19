@@ -2,7 +2,6 @@
 
 'use client';
 import React from 'react';
-import Image from 'next/image';
 import { SafeImage } from './SafeImage';
 import { FaHeart } from 'react-icons/fa';
 import Link from 'next/link';
@@ -14,7 +13,7 @@ type MediaCardProps = {
   item: KnownMedia;
 };
 
-function FavoriteButton({ id }: { id: string | number }) { // id reserved for future server sync
+function FavoriteButton({ id: __ }: { id: string | number }) { // id reserved for future server sync
   const [isFavorite, setIsFavorite] = React.useState(false);
   return (
     <button
@@ -81,10 +80,9 @@ export function MediaCard({ item }: MediaCardProps) {
           <SafeImage
             src={safeImageUrl}
             alt={safeTitle}
-            width={200}
-            height={300}
+            w={200}
+            h={300}
             className="media-tile-image h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-[1.06]"
-            priority={false}
           />
           <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
           <span className="absolute top-1.5 left-1.5 z-10 px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-wide bg-black/60 backdrop-blur-sm text-[var(--xprime-purple-accent)] border border-[color-mix(in_oklab,var(--xprime-purple)_55%,#000)]">
