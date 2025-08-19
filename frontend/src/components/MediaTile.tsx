@@ -1,17 +1,16 @@
 'use client';
 import Link from 'next/link';
 import { SafeImage } from './SafeImage';
+import type { MediaItem } from '@/lib/types';
+import { useFavorites } from '@/store/favorites';
+import { useSession } from '@/lib/useSession';
+import { useToast } from '@/components/ui/ToastProvider';
 
-export type MediaType = 'movie' | 'tv' | 'game' | 'book';
-export type MediaItem = {
-  id: number | string;
-  type: MediaType;
-  title: string;
-  year?: string | number | null;
-  posterUrl: string | null;
-};
-
-export default function MediaTile({ item }: { item: MediaItem }) {
+export default function MediaTile({ item, showQuickFav = true }: { item: MediaItem; showQuickFav?: boolean }) {
+  const { items, toggle } = useFavorites();
+  const token = useSession();
+  const isFav = items.some((i: MediaItem) => i.type === item.type && i.id === item.id);
+  const push = useToast();
   return (
     <Link href={`/media/${item.type}/${item.id}`} className="group relative block">
       <div className="rounded-xl overflow-hidden bg-zinc-800/40 ring-1 ring-white/10">
@@ -24,12 +23,38 @@ export default function MediaTile({ item }: { item: MediaItem }) {
         />
       </div>
       <div className="pointer-events-none absolute inset-0 rounded-xl bg-black/0 group-hover:bg-black/35 transition-colors" />
-      <div className="absolute inset-x-1 bottom-1 flex items-center justify-between gap-2 opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0 transition-all">
-        <div className="max-w-[75%]">
-          <p className="text-sm font-semibold leading-5 line-clamp-2">{item.title}</p>
-          <p className="text-[11px] text-zinc-300/80">{item.type.toUpperCase()}{item.year ? ` • ${item.year}` : ''}</p>
+      <div className="absolute inset-x-1 bottom-1 flex items-start justify-between gap-2 opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0 transition-all">
+        <div className="max-w-[75%] space-y-0.5">
+          <p className="text-sm font-semibold leading-5 line-clamp-2 drop-shadow">{item.title}</p>
+          <p className="text-[11px] text-zinc-200/90 tracking-wide font-medium">{item.type.toUpperCase()}{item.year ? ` • ${item.year}` : ''}</p>
         </div>
-        <button aria-label="Favorite" className="pointer-events-auto rounded-full bg-white/90 px-2 py-1 text-xs text-black hover:bg-white">＋</button>
+  {showQuickFav && <button
+          aria-label={isFav ? 'Remove Favorite' : 'Add Favorite'}
+          onClick={async (e) => {
+            e.preventDefault();
+            const wasFav = isFav;
+            // optimistic
+            toggle(item);
+            if (token) {
+              try {
+                const r = await fetch('/api/favorites', {
+                  method: 'POST',
+                  headers: { 'content-type': 'application/json' },
+                  body: JSON.stringify({ action: wasFav ? 'remove' : 'add', item }),
+                });
+                if (!r.ok) throw new Error('Failed');
+                push(wasFav ? 'Removed from favorites' : 'Added to favorites', { type: 'success', ttl: 2500 });
+              } catch {
+                // rollback
+                toggle(item);
+                push('Favorite update failed', { type: 'error' });
+              }
+            } else {
+              push(wasFav ? 'Removed locally' : 'Added locally', { type: 'info', ttl: 2000 });
+            }
+          }}
+          className={`pointer-events-auto rounded-full px-2 py-1 text-xs font-bold transition ${isFav ? 'bg-rose-500 text-white hover:bg-rose-400' : 'bg-white/90 text-black hover:bg-white'}`}
+  >{isFav ? '✓' : '＋'}</button>}
       </div>
     </Link>
   );

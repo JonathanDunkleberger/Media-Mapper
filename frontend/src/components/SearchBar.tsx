@@ -126,10 +126,10 @@ export function SearchBar({ onSelect }: SearchBarProps) {
       setLoading(true); setError(null);
       const algoliaController = new AbortController();
       const backendController = new AbortController();
-      const localAbortAlgolia = () => algoliaController.abort();
-      const localAbortBackend = () => backendController.abort();
-      abortRef.current.abortAlgolia = localAbortAlgolia;
-      abortRef.current.abortBackend = localAbortBackend;
+      // Store concrete abort fns in stable locals & update ref once
+      const abortAlgolia = () => algoliaController.abort();
+      const abortBackend = () => backendController.abort();
+      abortRef.current = { abortAlgolia, abortBackend };
 
       const pAlgolia = algoliaIndex.search<KnownMedia>(query, { hitsPerPage: 20 })
         .then((r: AlgoliaSearchResponse<KnownMedia>) => r.hits)
@@ -171,9 +171,9 @@ export function SearchBar({ onSelect }: SearchBarProps) {
     }, 200);
     return () => {
       clearTimeout(debounce);
-      const abortors = abortRef.current;
-      abortors.abortAlgolia?.();
-      abortors.abortBackend?.();
+      const snapshot = abortRef.current;
+      snapshot.abortAlgolia?.();
+      snapshot.abortBackend?.();
     };
   }, [query, algoliaIndex]);
 

@@ -1,6 +1,7 @@
 'use client';
 import { useRef } from 'react';
-import MediaTile, { MediaItem } from './MediaTile';
+import MediaTile from './MediaTile';
+import type { MediaItem } from '@/lib/types';
 
 export default function MediaRowCarousel({ title, items }: { title: string; items: MediaItem[] }) {
   const scroller = useRef<HTMLDivElement>(null);

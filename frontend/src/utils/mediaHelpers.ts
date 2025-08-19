@@ -96,8 +96,8 @@ export function normalizeMediaData(item: KnownMedia): NormalizedMedia {
   }
   if (imageUrl && imageUrl.startsWith('http://')) imageUrl = imageUrl.replace('http://','https://');
 
-  // Ensure we always have an image url, falling back to a placeholder
-  const finalImageUrl = imageUrl || `https://placehold.co/400x600/120e24/8b5cf6?text=${encodeURIComponent(title)}`;
+  // Only fallback if absolutely no upstream-sourced path
+  const finalImageUrl = imageUrl && imageUrl.trim().length > 0 ? imageUrl : undefined;
 
   // Provide aspect ratio guess: books 2/3, movies/tv/game 2/3 default for now
   const aspectRatio = 2/3;
@@ -116,10 +116,10 @@ export function normalizeMediaData(item: KnownMedia): NormalizedMedia {
     id: typeof id === 'string' || typeof id === 'number' ? id : String(id),
     title: String(title),
     media_type,
-    imageUrl: finalImageUrl,
-    image: { url: finalImageUrl, aspectRatio },
-    // compatibility fields
-    cover_image_url: finalImageUrl,
+  imageUrl: finalImageUrl,
+  image: finalImageUrl ? { url: finalImageUrl, aspectRatio } : undefined,
+  // compatibility fields (only set if available)
+  cover_image_url: finalImageUrl,
     poster_path: typeof raw.poster_path === 'string' ? raw.poster_path : undefined,
     background_image: typeof raw.background_image === 'string' ? raw.background_image : undefined,
     __raw: raw

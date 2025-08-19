@@ -1,19 +1,28 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { booksSearch, GoogleVolumeRaw } from '@/lib/books';
+import { mapBooksGoogle } from '@/lib/map';
+export const revalidate = 300;
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
-export const revalidate = 3600;
-
-export async function GET() {
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const take = Math.min(Math.max(Number(searchParams.get('take')) || 60, 1), 60); // limit to 60 for books
+  const page = Math.min(Math.max(Number(searchParams.get('page')) || 1, 1), 20);
+  const mode = (searchParams.get('mode') || 'popular') as 'popular' | 'top_rated' | 'newest';
+  const genresParam = searchParams.get('genres') || searchParams.get('subject') || 'fiction';
+  const subjects = genresParam.split(',').map(s => s.trim()).filter(Boolean);
   try {
-    const { data, error } = await supabase.from('books').select('*');
-    if (error) throw error;
-    return NextResponse.json({ success: true, books: data });
-  } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    return NextResponse.json({ success: false, error: message }, { status: 500 });
+    const startIndex = (page - 1) * take;
+    // Google Books API maxResults max 40; if take > 40 do two requests
+    const order = mode === 'newest' ? 'newest' : 'relevance';
+    const batch1 = await booksSearch(subjects, Math.min(take, 40), startIndex, order) as GoogleVolumeRaw[];
+    let combined = batch1;
+    if (take > 40) {
+      const batch2 = await booksSearch(subjects, take - 40, startIndex + 40, order) as GoogleVolumeRaw[];
+      combined = [...batch1, ...batch2];
+    }
+    return NextResponse.json({ items: mapBooksGoogle(combined) });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'failed';
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

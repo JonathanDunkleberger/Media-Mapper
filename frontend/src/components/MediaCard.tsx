@@ -13,7 +13,7 @@ type MediaCardProps = {
   item: KnownMedia;
 };
 
-function FavoriteButton({ id: __ }: { id: string | number }) { // id reserved for future server sync
+function FavoriteButton({ id }: { id: string | number }) { // id reserved for future server sync
   const [isFavorite, setIsFavorite] = React.useState(false);
   return (
     <button
@@ -22,7 +22,8 @@ function FavoriteButton({ id: __ }: { id: string | number }) { // id reserved fo
         setIsFavorite(f => !f);
       }}
       aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-      className={isFavorite ? 'text-red-500' : 'text-gray-400'}
+  className={isFavorite ? 'text-red-500' : 'text-gray-400'}
+  data-id={id}
       style={{ position: 'absolute', top: 8, right: 8, zIndex: 20, background: 'none', border: 'none' }}
     >
       <FaHeart />

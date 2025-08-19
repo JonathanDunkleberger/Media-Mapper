@@ -1,18 +1,52 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { tmdbJson } from '@/lib/tmdb';
+import { mapTV, TMDBTV } from '@/lib/map';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+export const revalidate = 300;
 
-export async function GET() {
+interface TMDBTvWithGenres extends TMDBTV { genre_ids?: number[] }
+interface TMDBResp { results?: TMDBTvWithGenres[] }
+
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const take = Math.min(Math.max(Number(searchParams.get('take')) || 60, 1), 100);
+  const page = Math.min(Math.max(Number(searchParams.get('page')) || 1, 1), 20);
+  const mode = (searchParams.get('mode') || 'popular') as 'popular' | 'trending' | 'top_rated';
+  const genres = searchParams.get('genres');
   try {
-    const { data, error } = await supabase.from('tv').select('*');
-    if (error) throw error;
-    return NextResponse.json({ success: true, tv: data });
-  } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    return NextResponse.json({ success: false, error: message }, { status: 500 });
+    const collected: TMDBTV[] = [];
+    let curPage = page;
+    const baseSort = mode === 'top_rated' ? 'vote_average.desc' : 'popularity.desc';
+    if (mode === 'trending' && !genres) {
+      while (collected.length < take && curPage < page + 5) {
+        const data = await tmdbJson<TMDBResp>('/trending/tv/day', { page: String(curPage) });
+        collected.push(...(data.results || []));
+        if (!data.results || data.results.length < 20) break;
+        curPage++;
+      }
+    } else {
+      while (collected.length < take && curPage < page + 5) {
+        const params: Record<string,string> = {
+          sort_by: baseSort,
+          page: String(curPage),
+          language: 'en-US'
+        };
+        if (genres) params.with_genres = genres;
+        if (mode === 'top_rated') params['vote_count.gte'] = '200';
+        const data = await tmdbJson<TMDBResp>('/discover/tv', params);
+        collected.push(...(data.results || []));
+        if (!data.results || data.results.length < 20) break;
+        curPage++;
+      }
+    }
+    let list: TMDBTvWithGenres[] = collected as TMDBTvWithGenres[];
+    if (genres && mode === 'trending') {
+      const genreSet = new Set(genres.split(','));
+      list = list.filter(m => m.genre_ids?.some(g => genreSet.has(String(g))));
+    }
+    return NextResponse.json({ items: mapTV(list).slice(0, take) });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : 'failed to load';
+    return NextResponse.json({ error: message }, { status: 502 });
   }
 }

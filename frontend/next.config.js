@@ -10,10 +10,15 @@ const nextConfig = {
       { protocol: 'https', hostname: 'cdn.myanimelist.net' },
       // Books (Open Library)
       { protocol: 'https', hostname: 'covers.openlibrary.org' },
+  // Google Books
+  { protocol: 'https', hostname: 'books.googleusercontent.com' },
+  { protocol: 'https', hostname: 'lh3.googleusercontent.com' },
       // Games (IGDB)
       { protocol: 'https', hostname: 'images.igdb.com' },
       // YouTube thumbnails
-      { protocol: 'https', hostname: 'i.ytimg.com' }
+  { protocol: 'https', hostname: 'i.ytimg.com' },
+  // RAWG (games)
+  { protocol: 'https', hostname: 'media.rawg.io' }
     ]
     // To bypass optimizer temporarily, you can add: , unoptimized: true
   }
