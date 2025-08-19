@@ -33,10 +33,10 @@ function FavoriteButton({ id }: { id: string | number }) {
 export function MediaCard({ item }: MediaCardProps) {
   const normalized = normalizeMediaData(item);
   const { id, title, type } = normalized;
-  // Only call getImageUrl if item is a MediaType
-  const imageUrl = (typeof (item as any).media_type === 'string')
-    ? getImageUrl(item as any)
-    : '/placeholder-media.png';
+  let imageUrl = '/placeholder-media.png';
+  if (isMovie(item) || isGame(item) || isBook(item)) {
+    imageUrl = getImageUrl(item);
+  }
 
   // Always use normalized type for label and href
   let typeLabel = 'MEDIA';

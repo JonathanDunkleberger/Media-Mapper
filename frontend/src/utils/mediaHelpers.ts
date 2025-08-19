@@ -1,5 +1,4 @@
 // Centralized image URL helper for all media types
-import type { MediaType } from '../types/media';
 
 export function getImageUrl(media: MediaType): string {
   switch (media.media_type) {
@@ -17,7 +16,8 @@ export function getImageUrl(media: MediaType): string {
       return '/placeholder-media.png';
   }
 }
-import type { KnownMedia, NormalizedMedia } from '../types/media';
+import type { KnownMedia, NormalizedMedia, MediaType } from '../types/media';
+import { isMovie, isBook, isGame } from '../types/media';
 
 export function getId(item: KnownMedia): string | number | undefined {
   if ('id' in item && item.id !== undefined) return item.id;
@@ -68,7 +68,10 @@ export function normalizeMediaData(item: KnownMedia): NormalizedMedia {
   }
   // Resolve best image
   // Only call getImageUrl if item is a MediaType (has media_type)
-  let imageUrl = (typeof (item as any).media_type === 'string') ? getImageUrl(item as any) : '';
+  let imageUrl = '';
+  if (isMovie(item) || isGame(item) || isBook(item)) {
+    imageUrl = getImageUrl(item as MediaType);
+  }
   // Additional deep fallbacks for books (volumeInfo)
   if (!imageUrl && typeof raw.volumeInfo === 'object' && raw.volumeInfo !== null) {
     const volumeInfo = raw.volumeInfo as { imageLinks?: { thumbnail?: string; smallThumbnail?: string } };
