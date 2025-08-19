@@ -1,8 +1,7 @@
-// Internal API fetch helper that constructs an absolute URL for SSR/Edge environments.
-// Uses VERCEL_URL in production, falls back to NEXT_PUBLIC_BASE_URL or localhost.
+// Internal API fetch helper constructing an absolute URL for SSR/Edge.
+// Prioritizes Vercel-provided deployment URL; otherwise falls back to localhost.
 export function internalBaseUrl(): string {
   if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
-  if (process.env.NEXT_PUBLIC_BASE_URL) return process.env.NEXT_PUBLIC_BASE_URL;
   return 'http://localhost:3000';
 }
 
