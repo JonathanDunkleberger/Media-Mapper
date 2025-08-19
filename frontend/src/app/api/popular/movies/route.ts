@@ -1,18 +1,19 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { NextResponse } from 'next/server';
+import { tmdbJson, tmdbImage } from '@/lib/tmdb';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+interface TMDBMovie { id: number; title?: string; poster_path?: string | null; }
 
 export async function GET() {
   try {
-    const { data, error } = await supabase.from('movies').select('*');
-    if (error) throw error;
-    return NextResponse.json({ success: true, movies: data });
-  } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    return NextResponse.json({ success: false, error: message }, { status: 500 });
+    const data = await tmdbJson<{ results?: TMDBMovie[] }>(`/trending/movie/week`);
+    const movies = (data.results || []).slice(0, 20).map(m => ({
+      id: m.id,
+      title: m.title || 'Untitled',
+      poster: tmdbImage(m.poster_path, 'w300')
+    }));
+    return NextResponse.json({ results: movies });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : 'failed to load';
+    return NextResponse.json({ error: message }, { status: 502 });
   }
 }

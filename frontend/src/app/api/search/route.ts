@@ -1,54 +1,25 @@
 import { NextResponse } from 'next/server';
+import { tmdbJson } from '@/lib/tmdb';
 
-// Simple federated search across TMDB (movies + tv) with defensive parsing
-// Supports query param: q (string), type (movie|tv|all)
-
-interface TMDBResultBase { id: number; title?: string; name?: string; poster_path?: string; media_type?: string; }
-
-async function fetchJsonSafe<T>(url: string, init?: RequestInit): Promise<T | null> {
-  try {
-    const res = await fetch(url, init);
-    if (!res.ok) return null;
-    const ct = res.headers.get('content-type') || '';
-    if (!ct.includes('application/json')) return null;
-    return await res.json() as T;
-  } catch {
-    return null;
-  }
-}
+interface SearchResult { id: number; title?: string; name?: string; poster_path?: string | null; media_type?: string; }
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const q = (searchParams.get('q') || '').trim();
-  const type = (searchParams.get('type') || 'all').toLowerCase();
-  if (!q) return NextResponse.json([], { status: 200 });
-  const apiKey = process.env.TMDB_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json({ error: 'Server missing TMDB key' }, { status: 500 });
+  if (!q) return NextResponse.json([]);
+  try {
+    // Use multi search; it returns movies, tv, people—filter to movie/tv only
+    const data = await tmdbJson<{ results?: SearchResult[] }>(`/search/multi`, { query: q });
+    const results = (data.results || []).filter(r => r && (r.media_type === 'movie' || r.media_type === 'tv'));
+    const simplified = results.slice(0, 30).map(r => ({
+      id: r.id,
+      title: r.title || r.name || '',
+      poster_path: r.poster_path || '',
+      type: r.media_type === 'tv' ? 'tv' : 'movie'
+    }));
+    return NextResponse.json(simplified);
+  } catch (e) {
+    const message = e instanceof Error ? e.message : 'search failed';
+    return NextResponse.json({ error: message }, { status: 502 });
   }
-  const encoded = encodeURIComponent(q);
-  const endpoints: string[] = [];
-  if (type === 'movie' || type === 'all') endpoints.push(`https://api.themoviedb.org/3/search/movie?query=${encoded}&api_key=${apiKey}`);
-  if (type === 'tv' || type === 'all') endpoints.push(`https://api.themoviedb.org/3/search/tv?query=${encoded}&api_key=${apiKey}`);
-
-  const resultsArrays = await Promise.all(endpoints.map(e => fetchJsonSafe<{ results?: TMDBResultBase[] }>(e)));
-  const merged: TMDBResultBase[] = [];
-  const seen = new Set<number>();
-  for (const block of resultsArrays) {
-    if (!block || !Array.isArray(block.results)) continue;
-    for (const r of block.results) {
-      if (!r || typeof r.id !== 'number') continue;
-      if (seen.has(r.id)) continue;
-      seen.add(r.id);
-      merged.push({ ...r, media_type: r.media_type || (r.title ? 'movie' : 'tv') });
-    }
-  }
-  // Normalize minimal shape consumed by client (it union merges with Algolia later)
-  const simplified = merged.slice(0, 20).map(r => ({
-    id: r.id,
-    title: r.title || r.name || '',
-    poster_path: r.poster_path || '',
-    type: r.media_type === 'tv' ? 'tv' : 'movie'
-  }));
-  return NextResponse.json(simplified, { status: 200 });
 }

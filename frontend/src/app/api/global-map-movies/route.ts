@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { tmdbJson, tmdbImage } from '@/lib/tmdb';
 
 // Simple set of country codes and coordinates
 const COUNTRY_CODES = [
@@ -15,29 +16,17 @@ const COUNTRY_COORDS: Record<string, { lat: number; lng: number }> = {
 
 interface MovieResult { id: number; title: string; poster: string | null; country: string; coords: { lat: number; lng: number } | null; }
 
-async function fetchTopMoviesByCountry(countryCode: string, apiKey: string): Promise<MovieResult[]> {
-  const url = `https://api.themoviedb.org/3/movie/popular?api_key=${apiKey}&region=${countryCode}`;
+async function fetchTopMoviesByCountry(countryCode: string): Promise<MovieResult[]> {
   try {
-    const res = await fetch(url, { next: { revalidate: 3600 } });
-    if (!res.ok) return [];
-    const json: unknown = await res.json();
-    let arr: unknown[] = [];
-    if (typeof json === 'object' && json !== null && 'results' in json) {
-      const potential = (json as { results?: unknown }).results;
-      if (Array.isArray(potential)) arr = potential;
-    }
-    return arr.slice(0, 3).map((raw) => {
-      const m = raw as { id?: unknown; title?: unknown; poster_path?: unknown };
-      const id = typeof m.id === 'number' ? m.id : Math.floor(Math.random() * 1e9);
-      const title = typeof m.title === 'string' ? m.title : 'Unknown';
-      const poster_path = typeof m.poster_path === 'string' ? m.poster_path : null;
-      return {
-        id,
-        title,
-        poster: poster_path ? `https://image.tmdb.org/t/p/w200${poster_path}` : null,
-        country: countryCode,
-        coords: COUNTRY_COORDS[countryCode] || null
-      } as MovieResult;
+  const data = await tmdbJson<{ results?: unknown[] }>(`/movie/popular`, { region: countryCode });
+  const arr: unknown[] = Array.isArray(data.results) ? data.results : [];
+    return arr.slice(0, 3).map(raw => {
+      const obj = raw as Record<string, unknown>;
+      const id = typeof obj.id === 'number' ? obj.id : Math.floor(Math.random() * 1e9);
+      const title = typeof obj.title === 'string' ? obj.title : 'Unknown';
+      const posterPath = typeof obj.poster_path === 'string' ? obj.poster_path : null;
+      const poster = tmdbImage(posterPath, 'w200');
+      return { id, title, poster, country: countryCode, coords: COUNTRY_COORDS[countryCode] || null } as MovieResult;
     });
   } catch {
     return [];
@@ -45,9 +34,7 @@ async function fetchTopMoviesByCountry(countryCode: string, apiKey: string): Pro
 }
 
 async function fetchGlobalTopMovies(): Promise<MovieResult[]> {
-  const apiKey = process.env.TMDB_API_KEY;
-  if (!apiKey) throw new Error('TMDB_API_KEY not set');
-  const all = await Promise.all(COUNTRY_CODES.map(code => fetchTopMoviesByCountry(code, apiKey)));
+  const all = await Promise.all(COUNTRY_CODES.map(code => fetchTopMoviesByCountry(code)));
   return all.flat();
 }
 
