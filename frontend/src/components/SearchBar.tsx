@@ -16,7 +16,6 @@ interface HitsDropdownProps {
   loading: boolean;
   error: string | null;
   results: KnownMedia[];
-  backendBase: string;
 }
 
 
@@ -49,7 +48,7 @@ function extractType(hit: KnownMedia): string | undefined {
   return undefined;
 }
 
-function HitsDropdown({ onSelect, close, query, loading, error, results, backendBase }: HitsDropdownProps) {
+function HitsDropdown({ onSelect, close, query, loading, error, results }: HitsDropdownProps) {
   if (!query) return null;
   return (
     <ul className="absolute z-50 mt-1 max-h-96 w-full overflow-auto rounded-md bg-gray-800 py-1 text-sm shadow-lg ring-1 ring-black/20 divide-y divide-gray-700">
@@ -90,7 +89,7 @@ function HitsDropdown({ onSelect, close, query, loading, error, results, backend
 export function SearchBar({ onSelect }: SearchBarProps) {
   const appId = process.env.NEXT_PUBLIC_ALGOLIA_APP_ID;
   const searchKey = process.env.NEXT_PUBLIC_ALGOLIA_SEARCH_KEY;
-  const backendBase = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3002';
+  // No backendBase needed; use /api endpoints directly
   const indexName = 'media';
 
   // Hooks MUST be declared before any early returns referencing their state (Rules of Hooks compliance)
@@ -133,7 +132,7 @@ export function SearchBar({ onSelect }: SearchBarProps) {
       const pAlgolia = algoliaIndex.search<KnownMedia>(query, { hitsPerPage: 20 })
         .then((r: AlgoliaSearchResponse<KnownMedia>) => r.hits)
         .catch((e: unknown) => { throw new Error('Algolia: ' + (e instanceof Error ? e.message : 'failed')); });
-      const backendUrl = `${backendBase}/api/search?q=${encodeURIComponent(query)}&type=all`;
+  const backendUrl = `/api/search?q=${encodeURIComponent(query)}&type=all`;
       const pBackend = fetch(backendUrl, { signal: backendController.signal })
         .then(r => r.ok ? r.json() : Promise.reject(new Error('Backend HTTP ' + r.status)))
         .catch((e: unknown) => { throw new Error('Live: ' + (e instanceof Error ? e.message : 'failed')); });
@@ -177,7 +176,7 @@ export function SearchBar({ onSelect }: SearchBarProps) {
       abortRef.current.abortAlgolia?.();
       abortRef.current.abortBackend?.();
     };
-  }, [query, algoliaIndex, backendBase]);
+  }, [query, algoliaIndex]);
 
   // Perform hybrid search (debounced)
   useEffect(() => {
@@ -193,7 +192,7 @@ export function SearchBar({ onSelect }: SearchBarProps) {
       const pAlgolia = algoliaIndex.search<KnownMedia>(query, { hitsPerPage: 20 })
         .then((r: AlgoliaSearchResponse<KnownMedia>) => r.hits)
         .catch((e: unknown) => { throw new Error('Algolia: ' + (e instanceof Error ? e.message : 'failed')); });
-      const backendUrl = `${backendBase}/api/search?q=${encodeURIComponent(query)}&type=all`;
+  const backendUrl = `/api/search?q=${encodeURIComponent(query)}&type=all`;
       const pBackend = fetch(backendUrl, { signal: backendController.signal })
         .then(r => r.ok ? r.json() : Promise.reject(new Error('Backend HTTP ' + r.status)))
         .catch((e: unknown) => { throw new Error('Live: ' + (e instanceof Error ? e.message : 'failed')); });
@@ -237,7 +236,7 @@ export function SearchBar({ onSelect }: SearchBarProps) {
       abortRef.current.abortAlgolia?.();
       abortRef.current.abortBackend?.();
     };
-  }, [query, algoliaIndex, backendBase]);
+  }, [query, algoliaIndex]);
 
   // --- RETURN THE JSX ---
   return (
@@ -260,7 +259,7 @@ export function SearchBar({ onSelect }: SearchBarProps) {
           loading={loading}
           error={error}
           results={results}
-          backendBase={backendBase}
+          // backendBase prop removed
         />
       )}
     </div>

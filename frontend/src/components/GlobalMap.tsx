@@ -4,7 +4,7 @@ import { MapContainer, TileLayer, Marker, Tooltip } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
-const backendBase = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3002';
+// No backendBase needed; use /api endpoints directly
 
 type MapMovie = {
   id: number;
@@ -19,13 +19,14 @@ export default function GlobalMap() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Removed broken/duplicate useEffect and backendBase usage
   useEffect(() => {
     const controller = new AbortController();
     (async () => {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(`${backendBase}/api/global-map-movies`, { signal: controller.signal });
+        const res = await fetch('/api/global-map-movies', { signal: controller.signal });
         if (!res.ok) throw new Error('Failed to fetch map data');
         const data = await res.json();
         setMovies(Array.isArray(data.movies) ? data.movies : []);

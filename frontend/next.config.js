@@ -1,13 +1,12 @@
-module.exports = {
-  output: 'standalone'
-};module.exports = {
-  productionBrowserSourceMaps: true, // Better error debugging
-  typescript: {
-    ignoreBuildErrors: false, // Ensure strict builds
-  },
-  eslint: {
-    ignoreDuringBuilds: false, // Enforce linting
-  },
-  // Vercel cache-busting build ID
-  generateBuildId: () => Date.now().toString(),
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  images: {
+    remotePatterns: [
+      { protocol: 'https', hostname: 'image.tmdb.org' },
+      { protocol: 'https', hostname: 'm.media-amazon.com' },
+      { protocol: 'https', hostname: 'cdn.myanimelist.net' }
+    ]
+  }
 };
+
+module.exports = nextConfig;

@@ -14,7 +14,7 @@ export default function MyMediaPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
-  const backendBase = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3002';
+  // No backendBase needed; use /api endpoints directly
 
   useEffect(() => {
     const controller = new AbortController();
@@ -33,17 +33,18 @@ export default function MyMediaPage() {
       // Authenticated user logic
       try {
         const token = localStorage.getItem('sb-access-token') || '';
-        const res = await fetch(`${backendBase}/api/favorites`, {
+        const res = await fetch('/api/favorites', {
           headers: { 'Authorization': `Bearer ${token}` },
           signal: controller.signal
         });
         if (!res.ok) throw new Error('Failed to fetch favorites');
         const data = await res.json();
         if (Array.isArray(data.favorites)) {
+          // data.favorites is expected to be an array of objects with a 'media' property of type KnownMedia
           const validFavorites = data.favorites
-            .map((fav: any) => fav.media)
-            .filter(Boolean);
-          setFavorites(validFavorites as KnownMedia[]);
+            .map((fav: { media: KnownMedia }) => fav.media)
+            .filter((media: unknown): media is KnownMedia => Boolean(media));
+          setFavorites(validFavorites);
         } else {
           setFavorites([]);
         }
@@ -57,13 +58,13 @@ export default function MyMediaPage() {
     return () => {
       controller.abort();
     };
-  }, [user, backendBase]);
+  }, [user]);
 
   const handleGetRecommendations = async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${backendBase}/api/recommend`, {
+      const res = await fetch('/api/recommend', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ favorites }),

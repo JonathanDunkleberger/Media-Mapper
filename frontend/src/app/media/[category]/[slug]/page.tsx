@@ -8,9 +8,10 @@ export default async function MediaDetailPage(props: unknown) {
   const p = props as { params?: { category: string; slug: string } } | undefined;
   const { category, slug } = (p?.params ?? {}) as { category: string; slug: string };
   // TODO: Replace with actual API endpoints
-  const mediaRaw: KnownMedia = await fetch(`http://localhost:3001/api/media/${category}/${slug}`).then(res => res.json());
+  // Use /api endpoints directly
+  const mediaRaw: KnownMedia = await fetch(`/api/media/${category}/${slug}`).then(res => res.json());
   const media = normalizeMediaData(mediaRaw);
-  const similarRaw: KnownMedia[] = await fetch(`http://localhost:3001/api/media/${category}/${slug}/similar`).then(res => res.json());
+  const similarRaw: KnownMedia[] = await fetch(`/api/media/${category}/${slug}/similar`).then(res => res.json());
   const similar = similarRaw.map(item => normalizeMediaData(item));
 
   let imageUrl = '/placeholder-media.png';

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import { MediaCard } from './MediaCard';
 import type { KnownMedia } from '../types/media';
 import { getId } from '../utils/mediaHelpers';
@@ -30,15 +30,26 @@ export function MediaCarousel({ title, mediaType, items: itemsProp, sectionId, e
       setInternalLoading(true);
       setError(null);
       try {
-        const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/${mediaType}`, {
+        const response = await axios.get(`/api/popular/${mediaType}`, {
           signal: controller.signal
         });
         setItems(response.data);
-      } catch (err: any) {
-        if (err.name === 'CanceledError' || err.name === 'AbortError') return;
-        setError('Error loading data. Showing fallback.');
-        setItems([{ title: 'Sample Item', id: 1, media_type: 'movie', type: 'movie' }]);
-        console.error(`Error loading ${mediaType}:`, err);
+      } catch (err: unknown) {
+        if (axios.isAxiosError(err)) {
+          if (err.name === 'CanceledError' || err.name === 'AbortError') return;
+          setError('Error loading data. Showing fallback.');
+          setItems([{ title: 'Sample Item', id: 1, media_type: 'movie', type: 'movie' }]);
+          console.error(`Error loading ${mediaType}:`, err);
+        } else if (err instanceof Error) {
+          if (err.name === 'CanceledError' || err.name === 'AbortError') return;
+          setError('Error loading data. Showing fallback.');
+          setItems([{ title: 'Sample Item', id: 1, media_type: 'movie', type: 'movie' }]);
+          console.error(`Error loading ${mediaType}:`, err);
+        } else {
+          setError('An unknown error occurred. Showing fallback.');
+          setItems([{ title: 'Sample Item', id: 1, media_type: 'movie', type: 'movie' }]);
+          console.error(`Error loading ${mediaType}:`, err);
+        }
       } finally {
         setInternalLoading(false);
       }

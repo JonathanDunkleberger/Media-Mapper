@@ -20,7 +20,7 @@ export default function Home() {
     if (user) {
       try {
         const token = (await window?.localStorage.getItem('sb-access-token')) || '';
-        await fetch(`${backendBase}/api/favorites`, {
+  await fetch(`/api/favorites`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -60,15 +60,14 @@ export default function Home() {
   const [recsError, setRecsError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'popular' | 'recommended'>('popular');
 
-  const backendBase = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3002';
+  // No backendBase needed; use /api endpoints directly
 
   useEffect(() => {
-    const backend = backendBase;
     Promise.all([
-      fetch(`${backend}/api/popular/games`).then(res => res.json()),
-      fetch(`${backend}/api/popular/movies`).then(res => res.json()),
-      fetch(`${backend}/api/popular/tv`).then(res => res.json()),
-      fetch(`${backend}/api/popular/books`).then(res => res.json())
+      fetch(`/api/popular/games`).then(res => res.json()),
+      fetch(`/api/popular/movies`).then(res => res.json()),
+      fetch(`/api/popular/tv`).then(res => res.json()),
+      fetch(`/api/popular/books`).then(res => res.json())
     ])
       .then(([gamesRes, moviesRes, tvRes, booksRes]) => {
         setMediaData(prev => ({
@@ -89,7 +88,7 @@ export default function Home() {
       (async () => {
         try {
           const token = (await window?.localStorage.getItem('sb-access-token')) || '';
-          const res = await fetch(`${backendBase}/api/favorites`, {
+          const res = await fetch(`/api/favorites`, {
             headers: { 'Authorization': `Bearer ${token}` }
           });
           if (res.ok) {
@@ -100,8 +99,8 @@ export default function Home() {
         } catch (e) { console.error('Fetch favorites failed', e); }
       })();
     }
-  }, [backendBase, user]);
-  const backend = backendBase;
+  }, [user]);
+  // backendBase removed; use /api endpoints directly
 
   const handleGetRecommendations = async () => {
     if (!inLoveList.length) return;
@@ -117,7 +116,7 @@ export default function Home() {
       });
       const bodyObj = { favorites: favoritesPayload };
       const bodyJson = JSON.stringify(bodyObj);
-      const res = await fetch(`${backend}/api/recommend`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }, body: bodyJson });
+  const res = await fetch(`/api/recommend`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }, body: bodyJson });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       const films = data.films || data.recommendations?.films || [];

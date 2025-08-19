@@ -16,7 +16,8 @@ export default function MediaDetailPage() {
     const controller = new AbortController();
     setLoading(true);
     setError(null);
-    fetch(`http://localhost:3001/api/details/${mediaType}/${id}`,
+    // Use /api endpoints directly
+    fetch(`/api/details/${mediaType}/${id}`,
       { signal: controller.signal })
       .then(res => res.json())
       .then(json => {

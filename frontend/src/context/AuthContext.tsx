@@ -36,7 +36,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       for (const fav of favorites) {
         const id = fav.external_id || fav.id || fav.key;
         if (!id) continue;
-        await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3002'}/api/favorites`, {
+  // Use /api endpoints directly
+  await fetch(`/api/favorites`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
