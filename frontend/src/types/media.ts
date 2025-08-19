@@ -35,6 +35,7 @@ export type NormalizedMedia = {
   type: 'movie' | 'tv' | 'book' | 'game' | string;
   id: string | number;
   title: string;
+  media_type: 'movie' | 'tv' | 'book' | 'game' | string;
   imageUrl?: string;
   image?: { url: string; aspectRatio?: number } | null;
   cover_image_url?: string;

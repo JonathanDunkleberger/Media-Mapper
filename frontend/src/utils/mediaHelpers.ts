@@ -90,6 +90,7 @@ export function normalizeMediaData(item: KnownMedia): NormalizedMedia {
     type,
     id: typeof id === 'string' || typeof id === 'number' ? id : String(id),
     title: String(title),
+    media_type: (typeof raw.media_type === 'string' && raw.media_type) ? raw.media_type as string : (typeof type === 'string' ? type : 'media'),
     imageUrl: finalImageUrl,
     image: { url: finalImageUrl, aspectRatio },
     // compatibility fields
