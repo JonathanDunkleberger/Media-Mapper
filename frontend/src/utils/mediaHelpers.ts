@@ -86,11 +86,21 @@ export function normalizeMediaData(item: KnownMedia): NormalizedMedia {
 
   // Provide aspect ratio guess: books 2/3, movies/tv/game 2/3 default for now
   const aspectRatio = 2/3;
+  // Only allow valid media_type values
+  const allowedTypes = ['movie', 'tv', 'book', 'game'] as const;
+  let media_type: 'movie' | 'tv' | 'book' | 'game' = 'movie';
+  if (allowedTypes.includes(type as any)) {
+    media_type = type as 'movie' | 'tv' | 'book' | 'game';
+  } else if (typeof raw.media_type === 'string' && allowedTypes.includes(raw.media_type as any)) {
+    media_type = raw.media_type as 'movie' | 'tv' | 'book' | 'game';
+  } else {
+    media_type = 'movie'; // fallback, or pick another default
+  }
   const normalized: NormalizedMedia = {
-    type,
+    type: media_type,
     id: typeof id === 'string' || typeof id === 'number' ? id : String(id),
     title: String(title),
-    media_type: (typeof raw.media_type === 'string' && raw.media_type) ? raw.media_type as string : (typeof type === 'string' ? type : 'media'),
+    media_type,
     imageUrl: finalImageUrl,
     image: { url: finalImageUrl, aspectRatio },
     // compatibility fields

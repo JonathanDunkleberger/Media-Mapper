@@ -32,10 +32,10 @@ export interface Book extends MediaItem {
 export type MediaType = Movie | Game | Book;
 
 export type NormalizedMedia = {
-  type: 'movie' | 'tv' | 'book' | 'game' | string;
+  type: 'movie' | 'tv' | 'book' | 'game';
   id: string | number;
   title: string;
-  media_type: 'movie' | 'tv' | 'book' | 'game' | string;
+  media_type: 'movie' | 'tv' | 'book' | 'game';
   imageUrl?: string;
   image?: { url: string; aspectRatio?: number } | null;
   cover_image_url?: string;
