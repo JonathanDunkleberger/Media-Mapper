@@ -54,7 +54,7 @@ export default function Home() {
     popular: { games: [] as KnownMedia[], movies: [] as KnownMedia[], tv: [] as KnownMedia[], books: [] as KnownMedia[] },
     recommended: { games: [] as KnownMedia[], movies: [] as KnownMedia[], tv: [] as KnownMedia[], books: [] as KnownMedia[] }
   });
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true); // Used for loading state, can be removed if not used elsewhere
   const [inLoveList, setInLoveList] = useState<KnownMedia[]>([]);
   const [recsLoading, setRecsLoading] = useState(false);
   const [recsError, setRecsError] = useState<string | null>(null);

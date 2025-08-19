@@ -2,6 +2,7 @@
 
 'use client';
 import React, { useState, useCallback, useMemo } from 'react';
+import Image from 'next/image';
 import { FaHeart } from 'react-icons/fa';
 import Link from 'next/link';
 import type { KnownMedia } from '../types/media';
@@ -68,12 +69,16 @@ export function MediaCard({ item }: MediaCardProps) {
         <div className="relative w-full" style={{ aspectRatio: aspectRatio ? aspectRatio : '2 / 3' }}>
           <FavoriteButton id={id ?? title} />
           {imgSrc ? (
-            <img
+            <Image
               src={imgSrc}
               onError={handleError}
               alt={title}
               className="h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-[1.06]"
+              fill
+              sizes="(max-width: 768px) 100vw, 160px"
+              style={{ objectFit: 'cover', objectPosition: 'center' }}
               loading="lazy"
+              unoptimized
             />
           ) : (
             <div className="h-full w-full flex items-center justify-center bg-[var(--xprime-surface-alt)] text-[var(--xprime-muted)] text-xs">No Image</div>

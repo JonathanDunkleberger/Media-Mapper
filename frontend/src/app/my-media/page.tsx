@@ -2,9 +2,9 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
-import { getId, normalizeMediaData } from '../../utils/mediaHelpers';
+// import { getId, normalizeMediaData } from '../../utils/mediaHelpers';
 import { InLoveList } from '../../components/InLoveList';
-import { RecommendationsGrid } from '../../components/RecommendationsGrid';
+// import { RecommendationsGrid } from '../../components/RecommendationsGrid';
 import type { KnownMedia } from '../../types/media';
 
 export default function MyMediaPage() {
@@ -28,7 +28,7 @@ export default function MyMediaPage() {
             const { favorites } = await res.json();
             setFavorites(Array.isArray(favorites) ? favorites.map((f: Record<string, unknown>) => 'media' in f ? f.media as KnownMedia : null).filter(Boolean) as KnownMedia[] : []);
           }
-        } catch (e) { setFavorites([]); }
+  } catch { setFavorites([]); }
       })();
     } else {
       // Load from localStorage for guests
