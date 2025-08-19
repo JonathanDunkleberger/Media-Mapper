@@ -78,6 +78,8 @@ export async function GET(req: Request) {
 
     return NextResponse.json({ items: processed.slice(0, take) });
   } catch (e: unknown) {
+    // Log server-side for diagnostics (won't leak sensitive data unless error message contains it)
+    console.error('anime popular route error', e);
     const err = e as { name?: string; message?: string } | null;
     const msg = err?.name === 'ZodError' ? 'Upstream payload did not match expected schema.' : (e instanceof Error ? e.message : 'failed');
     return NextResponse.json({ error: msg }, { status: 502 });

@@ -1,6 +1,6 @@
 "use client";
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { supabase } from '../utils/supabaseClient';
+import { supabaseClient } from '@/lib/supabase';
 import { fetchInternalAPI } from '@/lib/api';
 
 type AuthResult = {
@@ -52,12 +52,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
+  supabaseClient.auth.getSession().then(({ data }) => {
   const u = data.session?.user;
   setUser(u ? { id: u.id, email: u.email } : null);
       setLoading(false);
     });
-    const { data: listener } = supabase.auth.onAuthStateChange(async (_event, session) => {
+  const { data: listener } = supabaseClient.auth.onAuthStateChange(async (_event, session) => {
   const u = session?.user;
   setUser(u ? { id: u.id, email: u.email } : null);
       setLoading(false);
@@ -70,7 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signUp = async (email: string, password: string): Promise<AuthResult> => {
-    const result = await supabase.auth.signUp({ email, password });
+  const result = await supabaseClient.auth.signUp({ email, password });
     if (result.data.session?.user && result.data.session.access_token) {
       await syncGuestFavorites(result.data.session.access_token);
     }
@@ -78,14 +78,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signIn = async (email: string, password: string): Promise<AuthResult> => {
-    const result = await supabase.auth.signInWithPassword({ email, password });
+  const result = await supabaseClient.auth.signInWithPassword({ email, password });
     if (result.data.session?.user && result.data.session.access_token) {
       await syncGuestFavorites(result.data.session.access_token);
     }
     return { data: result.data, error: result.error };
   };
 
-  const signOut = async () => { await supabase.auth.signOut(); };
+  const signOut = async () => { await supabaseClient.auth.signOut(); };
 
   return (
     <AuthContext.Provider value={{ user, loading, signUp, signIn, signOut }}>
