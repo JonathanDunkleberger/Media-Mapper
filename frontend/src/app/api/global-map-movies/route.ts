@@ -1,5 +1,5 @@
-import { NextResponse } from 'next/server';
 import { tmdbJson, tmdbImage } from '@/lib/tmdb';
+import { createJsonRoute } from '@/lib/api/route-factory';
 
 // Simple set of country codes and coordinates
 const COUNTRY_CODES = [
@@ -38,12 +38,10 @@ async function fetchGlobalTopMovies(): Promise<MovieResult[]> {
   return all.flat();
 }
 
-export async function GET() {
-  try {
-    const movies = await fetchGlobalTopMovies();
-    return NextResponse.json({ movies });
-  } catch (e) {
-    const message = e instanceof Error ? e.message : 'Failed to fetch global map movies';
-    return NextResponse.json({ error: message }, { status: 500 });
+export const runtime = 'nodejs';
+export const GET = createJsonRoute({
+  cacheSeconds: 3600,
+  async run() {
+    return await fetchGlobalTopMovies();
   }
-}
+});

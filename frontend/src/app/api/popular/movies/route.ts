@@ -1,25 +1,29 @@
-import { NextResponse } from 'next/server';
+import { z } from 'zod';
 import { tmdbJson } from '@/lib/tmdb';
-import { upstreamError } from '@/lib/api-error';
 import { mapMovies, TMDBMovie } from '@/lib/map';
-
-export const revalidate = 300; // short cache; paging handled dynamically
+import { createJsonRoute } from '@/lib/api/route-factory';
 
 interface TMDBMovieWithGenres extends TMDBMovie { genre_ids?: number[] }
 interface TMDBResp { results?: TMDBMovieWithGenres[] }
 
-export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url);
-  const take = Math.min(Math.max(Number(searchParams.get('take')) || 60, 1), 100);
-  const page = Math.min(Math.max(Number(searchParams.get('page')) || 1, 1), 20);
-  const mode = (searchParams.get('mode') || 'popular') as 'popular' | 'trending' | 'top_rated';
-  const genres = searchParams.get('genres');
-  try {
+const Query = z.object({
+  take: z.coerce.number().int().min(1).max(100).default(60),
+  page: z.coerce.number().int().min(1).max(20).default(1),
+  mode: z.enum(['popular','trending','top_rated']).default('popular'),
+  genres: z.string().optional(),
+});
+
+export const runtime = 'edge';
+
+export const GET = createJsonRoute({
+  schema: Query,
+  cacheSeconds: 300,
+  async run({ query }) {
+    const { take, page, mode, genres } = query;
     const collected: TMDBMovie[] = [];
     let curPage = page;
     const baseSort = mode === 'top_rated' ? 'vote_average.desc' : 'popularity.desc';
     if (mode === 'trending' && !genres) {
-      // trending endpoint (cannot filter genres server-side). If genres requested we fallback to discover.
       while (collected.length < take && curPage < page + 5) {
         const data = await tmdbJson<TMDBResp>(`/trending/movie/day`, { page: String(curPage) });
         collected.push(...(data.results || []));
@@ -44,14 +48,9 @@ export async function GET(req: Request) {
     }
     let list: TMDBMovieWithGenres[] = collected as TMDBMovieWithGenres[];
     if (genres && mode === 'trending') {
-      // client-side filter for trending+genres
       const genreSet = new Set(genres.split(','));
       list = list.filter(m => m.genre_ids?.some(g => genreSet.has(String(g))));
     }
-  const headers = new Headers();
-  headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=60');
-  return NextResponse.json({ items: mapMovies(list).slice(0, take) }, { headers });
-  } catch (e) {
-    return upstreamError('TMDB', e, 502);
+    return mapMovies(list).slice(0, take);
   }
-}
+});

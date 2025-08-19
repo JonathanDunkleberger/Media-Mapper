@@ -25,9 +25,13 @@ function readingMinutesFromPageCount(pages?: number | null): number | null {
 }
 
 // --- Route ---
-export async function GET(_req: Request, { params }: { params: Promise<{ type: string; id: string }> }) {
-  const { type, id } = await params;
-  if (!type || !id) return NextResponse.json({ error: 'Missing params' }, { status: 400 });
+import { z } from 'zod';
+import { createJsonRoute } from '@/lib/api/route-factory';
+
+const Params = z.object({ type: z.enum(['movie','tv','game','book']), id: z.string() });
+
+export const GET = async (_req: Request, ctx: { params: unknown }) => {
+  const { type, id } = Params.parse(ctx.params);
   try {
     if (type === 'movie' || type === 'tv') {
   interface TmdbDetail { id: number; title?: string; name?: string; overview?: string; poster_path?: string | null; backdrop_path?: string | null; genres?: { name?: string }[]; runtime?: number | null; episode_run_time?: number[]; number_of_episodes?: number; tagline?: string; status?: string; budget?: number; revenue?: number; original_language?: string; release_date?: string; first_air_date?: string; adult?: boolean; content_ratings?: { results?: { iso_3166_1?: string; rating?: string }[] }; certifications?: unknown; } // simplified
@@ -68,9 +72,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ type: s
         });
       } catch {}
   const parsed = zEnrichedDetail.parse(detail);
-  const headers = new Headers();
-  headers.set('Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=600');
-  return NextResponse.json({ item: parsed }, { headers });
+  return NextResponse.json({ ok: true, data: parsed }, { headers: new Headers({ 'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=600' }) });
     }
 
     if (type === 'game') {
@@ -103,9 +105,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ type: s
         } catch {}
       }
   const parsed = zEnrichedDetail.parse(detail);
-  const headers = new Headers();
-  headers.set('Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=600');
-  return NextResponse.json({ item: parsed }, { headers });
+  return NextResponse.json({ ok: true, data: parsed }, { headers: new Headers({ 'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=600' }) });
     }
 
     if (type === 'book') {
@@ -139,14 +139,11 @@ export async function GET(_req: Request, { params }: { params: Promise<{ type: s
         rating: [],
       };
   const parsed = zEnrichedDetail.parse(detail);
-  const headers = new Headers();
-  headers.set('Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=600');
-  return NextResponse.json({ item: parsed }, { headers });
+  return NextResponse.json({ ok: true, data: parsed }, { headers: new Headers({ 'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=600' }) });
     }
-
-    return NextResponse.json({ error: 'Unsupported type' }, { status: 400 });
+    return NextResponse.json({ ok: false, error: 'Unsupported type' }, { status: 400 });
   } catch (e) {
   const msg = e instanceof Error ? e.message : 'failed';
-  return NextResponse.json({ error: msg }, { status: 500 });
+  return NextResponse.json({ ok: false, error: msg }, { status: 500 });
   }
-}
+};

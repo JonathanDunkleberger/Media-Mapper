@@ -1,22 +1,25 @@
-import { NextResponse } from 'next/server';
+import { z } from 'zod';
 import type { MediaItem, MediaType } from '@/lib/types';
 import { computeRecommendations } from '@/lib/recs';
 import { createSupabaseServer } from '@/lib/supabase-server';
+import { createJsonRoute } from '@/lib/api/route-factory';
 
-export const revalidate = 0; // always fresh
+const Query = z.object({
+  cat: z.enum(['movie','tv','game','book']).optional(),
+});
 
-export async function GET(req: Request) {
-  try {
+export const runtime = 'nodejs';
+
+export const GET = createJsonRoute({
+  schema: Query,
+  cacheSeconds: 0,
+  async run({ query }) {
     const supabase = createSupabaseServer();
     const { data: { user } } = await supabase.auth.getUser();
-
-    const u = new URL(req.url);
-    const cat = (u.searchParams.get('cat') as MediaType | null) ?? null;
-
+    const cat = query.cat as MediaType | undefined;
     let favorites: MediaItem[] = [];
     let favoritesHash = 'anon';
     if (user) {
-      // pull favorites first
       const favRes = await supabase
         .from('favorites')
         .select('media_type, external_id, title, poster_url, year, updated_at')
@@ -32,18 +35,14 @@ export async function GET(req: Request) {
           year: r.year ?? null,
           sublabel: (r.media_type && typeof r.media_type === 'string' ? r.media_type.toUpperCase() : 'MEDIA') + (r.year ? ` • ${r.year}` : ''),
         }));
-        // stable order hash
         const key = favorites.map(f => `${f.type}:${f.id}`).sort().join('|');
-        // simple hash
         favoritesHash = Buffer.from(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(key))).toString('hex').slice(0,32);
       }
     }
-
     let recs: MediaItem[] = [];
-    const TTL_MS = 5 * 60 * 1000; // 5 minutes
+    const TTL_MS = 5 * 60 * 1000;
     if (user) {
       const now = Date.now();
-      // check cache
       const { data: cacheRows } = await supabase
         .from('user_recs_cache')
         .select('results_json, favorites_hash, updated_at')
@@ -60,7 +59,6 @@ export async function GET(req: Request) {
         }
       }
     }
-
     if (!recs.length) {
       recs = await computeRecommendations(favorites);
       if (user) {
@@ -71,11 +69,7 @@ export async function GET(req: Request) {
         }).select();
       }
     }
-
     const filtered = cat ? recs.filter(r => r.type === cat) : recs;
-    return NextResponse.json({ results: filtered });
-  } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : 'unknown';
-    return NextResponse.json({ error: msg }, { status: 500 });
+    return filtered;
   }
-}
+});

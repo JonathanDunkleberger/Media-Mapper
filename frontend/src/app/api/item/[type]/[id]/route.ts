@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
+import { createJsonRoute } from '@/lib/api/route-factory';
 import { tmdbJson } from '@/lib/tmdb';
 import { igdb, igdbCoverUrl, IGDBGameRaw } from '@/lib/igdb';
 import { booksGet, booksSimilar, GoogleVolumeRaw } from '@/lib/books';
@@ -24,16 +26,10 @@ interface TmdbCore {
   success?: boolean;
 }
 
-export async function GET(_req: Request, { params }: { params: Promise<RawParams> }) {
-  const resolved = await params;
-  const typeVal = resolved?.type;
-  const idVal = resolved?.id;
-  const type = Array.isArray(typeVal) ? typeVal[0] : typeVal;
-  const id = Array.isArray(idVal) ? idVal[0] : idVal;
-  if (!type || !id) return NextResponse.json({ error: 'Missing params' }, { status: 400 });
-  if (type !== 'movie' && type !== 'tv' && type !== 'game' && type !== 'book') {
-    return NextResponse.json({ error: 'Unsupported type' }, { status: 400 });
-  }
+const Params = z.object({ type: z.enum(['movie','tv','game','book']), id: z.string() });
+
+export async function GET(_req: Request, ctx: { params: unknown }) {
+  const { type, id } = Params.parse(ctx.params);
   try {
     if (type === 'movie' || type === 'tv') {
       const raw = await tmdbJson<TmdbCore>(`/${type}/${id}`);
@@ -77,7 +73,7 @@ export async function GET(_req: Request, { params }: { params: Promise<RawParams
       {
         const headers = new Headers();
         headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=60');
-        return NextResponse.json({ item: detail }, { headers });
+  return NextResponse.json({ ok: true, data: detail }, { headers });
       }
     }
     if (type === 'game') {
@@ -110,7 +106,7 @@ export async function GET(_req: Request, { params }: { params: Promise<RawParams
       {
         const headers = new Headers();
         headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=60');
-        return NextResponse.json({ item: detail }, { headers });
+  return NextResponse.json({ ok: true, data: detail }, { headers });
       }
     }
     if (type === 'book') {
@@ -139,10 +135,10 @@ export async function GET(_req: Request, { params }: { params: Promise<RawParams
       {
         const headers = new Headers();
         headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=60');
-        return NextResponse.json({ item: detail }, { headers });
+    return NextResponse.json({ ok: true, data: detail }, { headers });
       }
     }
   } catch {
-    return NextResponse.json({ error: 'Fetch failed' }, { status: 500 });
+  return NextResponse.json({ ok: false, error: 'Fetch failed' }, { status: 500 });
   }
 }
