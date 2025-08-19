@@ -34,10 +34,19 @@ export function MediaCarousel({ title, mediaType, items: itemsProp, sectionId, e
         const response = await fetchInternalAPI<{ items?: KnownMedia[]; results?: KnownMedia[] }>(`/api/popular/${mediaType}`, { cache: 'no-store', signal: controller.signal });
         const list = (response.items || response.results || []) as KnownMedia[];
         setItems(list);
-      } catch (err: any) {
-        if (err?.name === 'CanceledError' || err?.name === 'AbortError') return;
+      } catch (err: unknown) {
+        const isAbort = (() => {
+          if (err instanceof DOMException && (err.name === 'AbortError' || err.name === 'CanceledError')) return true;
+          if (typeof err === 'object' && err !== null && 'name' in err) {
+            const name = (err as { name?: string }).name;
+            return name === 'AbortError' || name === 'CanceledError';
+          }
+          return false;
+        })();
+        if (isAbort) return;
         setError('Error loading data. Showing fallback.');
         setItems([{ title: 'Sample Item', id: 1, media_type: 'movie', type: 'movie' }]);
+        // Log full error details for debugging while avoiding throwing in UI
         console.error(`Error loading ${mediaType}:`, err);
       } finally {
         setInternalLoading(false);
