@@ -78,7 +78,13 @@ export function normalizeMediaData(item: KnownMedia): NormalizedMedia {
   // Derive type
   const type = (raw.type || raw.media_type || raw.category || '').toString() || inferTypeFromFields(raw);
   // Derive title
-  const title = getTitle(item) || raw.slug || String(id);
+  let title = getTitle(item);
+  if (!title && typeof raw.slug === 'string') {
+    title = raw.slug;
+  }
+  if (!title) {
+    title = String(id);
+  }
   // Resolve best image
   let imageUrl = getImageUrl(item);
   // Additional deep fallbacks for books (volumeInfo)
@@ -89,16 +95,20 @@ export function normalizeMediaData(item: KnownMedia): NormalizedMedia {
     }
   }
   if (imageUrl && imageUrl.startsWith('http://')) imageUrl = imageUrl.replace('http://','https://');
+
+  // Ensure we always have an image url, falling back to a placeholder
+  const finalImageUrl = imageUrl || `https://placehold.co/400x600/120e24/8b5cf6?text=${encodeURIComponent(title)}`;
+
   // Provide aspect ratio guess: books 2/3, movies/tv/game 2/3 default for now
   const aspectRatio = 2/3;
   const normalized: NormalizedMedia = {
     type,
     id: typeof id === 'string' || typeof id === 'number' ? id : String(id),
     title: String(title),
-    imageUrl: imageUrl,
-    image: imageUrl ? { url: imageUrl, aspectRatio } : null,
+    imageUrl: finalImageUrl,
+    image: { url: finalImageUrl, aspectRatio },
     // compatibility fields
-    cover_image_url: imageUrl,
+    cover_image_url: finalImageUrl,
     poster_path: typeof raw.poster_path === 'string' ? raw.poster_path : undefined,
     background_image: typeof raw.background_image === 'string' ? raw.background_image : undefined,
     __raw: raw

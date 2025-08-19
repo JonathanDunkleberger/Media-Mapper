@@ -2,6 +2,8 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import algoliasearch from 'algoliasearch/lite';
+
+type AlgoliaSearchResponse<T> = { hits: T[]; [key: string]: unknown };
 import type { KnownMedia, SearchResult } from '../types/media';
 
 interface SearchBarProps { onSelect: (item: KnownMedia) => void; }
@@ -27,14 +29,14 @@ function extractTitle(hit: SearchResult): string {
 }
 
 function extractImage(hit: SearchResult): string {
-  const possible = [
-    typeof (hit as { image_url?: unknown }).image_url === 'string' ? (hit as { image_url: string }).image_url : undefined,
-    hit.cover_image_url,
+  const possible: (string | undefined)[] = [
+    typeof hit.image_url === 'string' ? hit.image_url : undefined,
+    typeof hit.cover_image_url === 'string' ? hit.cover_image_url : undefined,
     typeof hit.poster_path === 'string' ? hit.poster_path : undefined,
     hit.imageLinks && typeof hit.imageLinks.thumbnail === 'string' ? hit.imageLinks.thumbnail : undefined,
-    hit.background_image,
-  ].filter(Boolean) as string[];
-  const chosen = possible[0];
+    typeof hit.background_image === 'string' ? hit.background_image : undefined,
+  ];
+  const chosen = possible.find(Boolean);
   if (!chosen) return 'https://placehold.co/56x84';
   if (chosen.startsWith('http')) return chosen;
   // TMDB relative path fallback
@@ -57,28 +59,13 @@ function HitsDropdown({ onSelect, close, query, loading, error, results, backend
         const mediaType = extractType(hit) || 'movie';
         const img = extractImage(hit);
         const key = `${mediaType}_${hit.objectID || hit.external_id || hit.id || title}_${idx}`;
+        const selectedItem: KnownMedia = { ...hit, title, type: mediaType };
         return (
           <li
             key={key}
             className="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-gray-700"
-            onClick={async () => {
-              try {
-                const resp = await fetch(`${backendBase}/api/media/normalize`, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ item: { ...hit, title, type: mediaType } })
-                });
-                if (resp.ok) {
-                  const json = await resp.json();
-                  // Use a type guard to ensure KnownMedia
-                  const enriched = (json.item || json) as KnownMedia;
-                  onSelect(enriched);
-                } else {
-                  onSelect({ ...hit, title, type: mediaType } as KnownMedia);
-                }
-              } catch {
-                onSelect({ ...hit, title, type: mediaType } as KnownMedia);
-              }
+            onClick={() => {
+              onSelect(selectedItem);
               close();
             }}
           >
@@ -95,7 +82,7 @@ function HitsDropdown({ onSelect, close, query, loading, error, results, backend
 }
 
 export function SearchBar({ onSelect }: SearchBarProps) {
-  const appId = process.env.NEXT_PUBLIC_ALGOLIA_APP_ID || process.env.ALGOLIA_APP_ID;
+  const appId = process.env.NEXT_PUBLIC_ALGOLIA_APP_ID;
   const searchKey = process.env.NEXT_PUBLIC_ALGOLIA_SEARCH_KEY;
   const backendBase = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3002';
   const indexName = 'media';
@@ -138,7 +125,7 @@ export function SearchBar({ onSelect }: SearchBarProps) {
       abortRef.current.abortBackend = () => backendController.abort();
 
       const pAlgolia = algoliaIndex.search<SearchResult>(query, { hitsPerPage: 20 })
-        .then(r => r.hits)
+        .then((r: AlgoliaSearchResponse<SearchResult>) => r.hits)
         .catch((e: unknown) => { throw new Error('Algolia: ' + (e instanceof Error ? e.message : 'failed')); });
       const backendUrl = `${backendBase}/api/search?q=${encodeURIComponent(query)}&type=all`;
       const pBackend = fetch(backendUrl, { signal: backendController.signal })
@@ -163,7 +150,11 @@ export function SearchBar({ onSelect }: SearchBarProps) {
         setError(errs.length ? errs.join(' | ') : null);
       }).finally(() => setLoading(false));
     }, 200);
-    return () => clearTimeout(debounce);
+    return () => {
+      clearTimeout(debounce);
+      abortRef.current.abortAlgolia?.();
+      abortRef.current.abortBackend?.();
+    };
   }, [query, algoliaIndex, backendBase]);
 
   return (
@@ -192,7 +183,8 @@ export function SearchBar({ onSelect }: SearchBarProps) {
           onSelect={(item) => {
             onSelect(item);
             setOpen(false);
-            setTimeout(() => { setQuery(''); setResults([]); if (inputRef.current) inputRef.current.value=''; }, 0);
+            setQuery('');
+            setResults([]);
           }}
           close={() => setOpen(false)}
           query={query}

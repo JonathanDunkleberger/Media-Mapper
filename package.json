@@ -9,5 +9,6 @@
     "concurrently": "^9.2.0"
   },
   "dependencies": {
+    "@types/algoliasearch": "^4.0.4"
   }
 }

@@ -7,6 +7,10 @@ settings:
 importers:
 
   .:
+    dependencies:
+      '@types/algoliasearch':
+        specifier: ^4.0.4
+        version: 4.0.4
     devDependencies:
       concurrently:
         specifier: ^9.2.0
@@ -973,6 +977,10 @@ packages:
 
   '@tybys/wasm-util@0.10.0':
     resolution: {integrity: sha512-VyyPYFlOMNylG45GoAe0xDoLwWuowvf92F9kySqzYh8vmYm7D2u4iUJKa1tOUpS70Ku13ASrOkS4ScXFsTaCNQ==}
+
+  '@types/algoliasearch@4.0.4':
+    resolution: {integrity: sha512-vEWHnOZ02D3hhHK9MwH1D7x0GF2S9iI5e0ua4YC4ZGbBzFyN2GdrHolNGbn9D8JI0S7yL2h6HFUsSIha1FaEhQ==}
+    deprecated: This is a stub types definition. algoliasearch provides its own type definitions, so you do not need this installed.
 
   '@types/dom-speech-recognition@0.0.1':
     resolution: {integrity: sha512-udCxb8DvjcDKfk1WTBzDsxFbLgYxmQGKrE/ricoMqHRNjSlSUCcamVTA5lIQqzY10mY5qCY0QDwBfFEwhfoDPw==}
@@ -4098,6 +4106,10 @@ snapshots:
     dependencies:
       tslib: 2.8.1
     optional: true
+
+  '@types/algoliasearch@4.0.4':
+    dependencies:
+      algoliasearch: 4.25.2
 
   '@types/dom-speech-recognition@0.0.1': {}
 

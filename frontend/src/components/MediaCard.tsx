@@ -1,21 +1,20 @@
 
 
 'use client';
-import React, { useState, useCallback, useMemo } from 'react';
+import React from 'react';
 import Image from 'next/image';
 import { FaHeart } from 'react-icons/fa';
 import Link from 'next/link';
 import type { KnownMedia } from '../types/media';
 import { isMovie, isTV, isBook, isGame } from '../types/media';
-import { getImageUrl, getTitle, getId } from '../utils/mediaHelpers';
+import { normalizeMediaData } from '../utils/mediaHelpers';
 
 type MediaCardProps = {
   item: KnownMedia;
 };
 
-// Simple local favorite state (for demo; replace with persistent storage as needed)
 function FavoriteButton({ id }: { id: string | number }) {
-  const [isFavorite, setIsFavorite] = useState(false);
+  const [isFavorite, setIsFavorite] = React.useState(false);
   return (
     <button
       onClick={e => {
@@ -32,51 +31,38 @@ function FavoriteButton({ id }: { id: string | number }) {
 }
 
 export function MediaCard({ item }: MediaCardProps) {
-  // Determine image src and fallback based on media type
-  let initialImg = getImageUrl(item) ?? '';
-  let alt = getTitle(item) || 'Untitled';
-  // TMDB
-  if ('poster_path' in item && item.poster_path) {
-    initialImg = item.poster_path.startsWith('http')
-      ? item.poster_path
-      : `https://image.tmdb.org/t/p/w500${item.poster_path}`;
-    alt = getTitle(item) || 'Movie/TV Poster';
-  }
-  // IGDB
-  if ((item as any).cover?.image_id) {
-    initialImg = `https://images.igdb.com/igdb/image/upload/t_cover_big/${(item as any).cover.image_id}.jpg`;
-    alt = getTitle(item) || 'Game Cover';
-  }
-  // Google Books
-  if ((item as any).volumeInfo?.imageLinks?.thumbnail) {
-    initialImg = (item as any).volumeInfo.imageLinks.thumbnail.replace('http://', 'https://');
-    alt = getTitle(item) || 'Book Cover';
-  }
-  const stdImage = (typeof item === 'object' && item && 'image' in item) ? (item as { image?: { aspectRatio?: number } }).image : undefined;
-  const aspectRatio = useMemo(() => {
-    if (stdImage && typeof stdImage.aspectRatio === 'number' && stdImage.aspectRatio > 0) {
-      return stdImage.aspectRatio.toFixed(4);
-    }
-    return null;
-  }, [stdImage]);
-  const [imgSrc, setImgSrc] = useState(initialImg);
-  const title = getTitle(item) || 'Untitled';
-  const id = getId(item);
-  const typeLabel = isMovie(item) ? 'MOVIE' : isTV(item) ? 'TV' : isGame(item) ? 'GAME' : 'BOOK';
-  const fallback = 'https://placehold.co/400x600/120e24/8b5cf6?text=No+Image';
-  const href = isBook(item)
-    ? `/book/${id}`
-    : isMovie(item)
-    ? `/movie/${id}`
-    : isTV(item)
-    ? `/tv/${id}`
-    : isGame(item)
-    ? `/game/${id}`
-    : '#';
+  const normalized = normalizeMediaData(item);
+  const { id, title, imageUrl, image, type } = normalized;
 
-  const handleError = useCallback(() => {
-    if (imgSrc !== fallback) setImgSrc(fallback);
-  }, [imgSrc]);
+  // Always use normalized type for label and href
+  let typeLabel = 'MEDIA';
+  let href = '#';
+  switch (type) {
+    case 'movie':
+      typeLabel = 'MOVIE';
+      href = `/movie/${id}`;
+      break;
+    case 'tv':
+      typeLabel = 'TV';
+      href = `/tv/${id}`;
+      break;
+    case 'game':
+      typeLabel = 'GAME';
+      href = `/game/${id}`;
+      break;
+    case 'book':
+      typeLabel = 'BOOK';
+      href = `/book/${id}`;
+      break;
+    default:
+      typeLabel = typeof type === 'string' ? type.toUpperCase() : 'MEDIA';
+      href = '#';
+  }
+
+  // Fallbacks for imageUrl and title
+  const safeImageUrl = typeof imageUrl === 'string' && imageUrl.length > 0 ? imageUrl : 'https://placehold.co/200x300?text=No+Image';
+  const safeTitle = typeof title === 'string' && title.length > 0 ? title : 'Media Poster';
+  const safeId = id ?? safeTitle;
 
   return (
     <Link
@@ -85,31 +71,25 @@ export function MediaCard({ item }: MediaCardProps) {
       tabIndex={0}
     >
       <div className="relative rounded-xl overflow-hidden bg-[var(--xprime-surface)] ring-1 ring-[color-mix(in_oklab,var(--xprime-purple)_35%,#1f153a)] shadow-sm hover:shadow-lg hover:ring-[var(--xprime-purple)] transition-all duration-300">
-        <div className="relative w-full" style={{ aspectRatio: aspectRatio ? aspectRatio : '2 / 3' }}>
-          <FavoriteButton id={id ?? title} />
-          {imgSrc ? (
-            <Image
-              src={imgSrc}
-              alt={alt}
-              width={200}
-              height={300}
-              className="media-tile-image h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-[1.06]"
-              onError={handleError}
-              loading="lazy"
-              unoptimized={true}
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              priority={false}
-            />
-          ) : (
-            <div className="h-full w-full flex items-center justify-center bg-[var(--xprime-surface-alt)] text-[var(--xprime-muted)] text-xs">No Image</div>
-          )}
+        <div className="relative w-full" style={{ aspectRatio: image?.aspectRatio ? image.aspectRatio.toFixed(4) : '2 / 3' }}>
+          <FavoriteButton id={safeId} />
+          <Image
+            src={safeImageUrl}
+            alt={safeTitle}
+            width={200}
+            height={300}
+            className="media-tile-image h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-[1.06]"
+            loading="lazy"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            priority={false}
+          />
           <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
           <span className="absolute top-1.5 left-1.5 z-10 px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-wide bg-black/60 backdrop-blur-sm text-[var(--xprime-purple-accent)] border border-[color-mix(in_oklab,var(--xprime-purple)_55%,#000)]">
             {typeLabel}
           </span>
           <div className="absolute bottom-0 inset-x-0 p-2 pt-6 flex flex-col justify-end bg-gradient-to-t from-black/90 via-black/40 to-transparent">
             <h3 className="text-[11px] font-semibold leading-tight text-white line-clamp-2 min-h-[2.6em] drop-shadow">
-              {title}
+              {safeTitle}
             </h3>
           </div>
         </div>
