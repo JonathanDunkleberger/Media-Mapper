@@ -4,7 +4,7 @@ import Image from 'next/image';
 import algoliasearch from 'algoliasearch/lite';
 
 type AlgoliaSearchResponse<T> = { hits: T[]; [key: string]: unknown };
-import type { KnownMedia, SearchResult } from '../types/media';
+import type { KnownMedia } from '../types/media';
 
 interface SearchBarProps { onSelect: (item: KnownMedia) => void; }
 
@@ -15,26 +15,26 @@ interface HitsDropdownProps {
   query: string;
   loading: boolean;
   error: string | null;
-  results: SearchResult[];
+  results: KnownMedia[];
   backendBase: string;
 }
 
-function extractTitle(hit: SearchResult): string {
+function extractTitle(hit: KnownMedia): string {
   return (
-    hit.title ||
-    hit.name ||
-    (typeof hit.key === 'string' ? hit.key : '') ||
+    (hit as any).title ||
+    (hit as any).name ||
+    (typeof (hit as any).key === 'string' ? (hit as any).key : '') ||
     ''
   );
 }
 
-function extractImage(hit: SearchResult): string {
+function extractImage(hit: KnownMedia): string {
   const possible: (string | undefined)[] = [
-    typeof hit.image_url === 'string' ? hit.image_url : undefined,
-    typeof hit.cover_image_url === 'string' ? hit.cover_image_url : undefined,
-    typeof hit.poster_path === 'string' ? hit.poster_path : undefined,
-    hit.imageLinks && typeof hit.imageLinks.thumbnail === 'string' ? hit.imageLinks.thumbnail : undefined,
-    typeof hit.background_image === 'string' ? hit.background_image : undefined,
+    typeof (hit as any).image_url === 'string' ? (hit as any).image_url : undefined,
+    typeof (hit as any).cover_image_url === 'string' ? (hit as any).cover_image_url : undefined,
+    typeof (hit as any).poster_path === 'string' ? (hit as any).poster_path : undefined,
+    (hit as any).imageLinks && typeof (hit as any).imageLinks.thumbnail === 'string' ? (hit as any).imageLinks.thumbnail : undefined,
+    typeof (hit as any).background_image === 'string' ? (hit as any).background_image : undefined,
   ];
   const chosen = possible.find(Boolean);
   if (!chosen) return 'https://placehold.co/56x84';
@@ -43,8 +43,8 @@ function extractImage(hit: SearchResult): string {
   return chosen.startsWith('/t') ? `https://image.tmdb.org/t/p/w185${chosen}` : chosen;
 }
 
-function extractType(hit: SearchResult): SearchResult['type'] {
-  return hit.type || hit.media_type || undefined;
+function extractType(hit: KnownMedia): string | undefined {
+  return (hit as any).type || (hit as any).media_type || undefined;
 }
 
 function HitsDropdown({ onSelect, close, query, loading, error, results, backendBase }: HitsDropdownProps) {
@@ -58,8 +58,8 @@ function HitsDropdown({ onSelect, close, query, loading, error, results, backend
         const title = extractTitle(hit);
         const mediaType = extractType(hit) || 'movie';
         const img = extractImage(hit);
-        const key = `${mediaType}_${hit.objectID || hit.external_id || hit.id || title}_${idx}`;
-        const selectedItem: KnownMedia = { ...hit, title, type: mediaType };
+  const key = `${mediaType}_${(hit as any).objectID || (hit as any).external_id || hit.id || title}_${idx}`;
+  const selectedItem: KnownMedia = { ...hit, title, type: mediaType as 'movie' | 'tv' | 'book' | 'game' };
         return (
           <li
             key={key}
@@ -92,7 +92,7 @@ export function SearchBar({ onSelect }: SearchBarProps) {
   const [open, setOpen] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [results, setResults] = useState<SearchResult[]>([]);
+  const [results, setResults] = useState<KnownMedia[]>([]);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const abortRef = useRef<{ abortAlgolia?: () => void; abortBackend?: () => void }>({});
@@ -124,8 +124,8 @@ export function SearchBar({ onSelect }: SearchBarProps) {
       abortRef.current.abortAlgolia = () => algoliaController.abort();
       abortRef.current.abortBackend = () => backendController.abort();
 
-      const pAlgolia = algoliaIndex.search<SearchResult>(query, { hitsPerPage: 20 })
-        .then((r: AlgoliaSearchResponse<SearchResult>) => r.hits)
+      const pAlgolia = algoliaIndex.search<KnownMedia>(query, { hitsPerPage: 20 })
+        .then((r: AlgoliaSearchResponse<KnownMedia>) => r.hits)
         .catch((e: unknown) => { throw new Error('Algolia: ' + (e instanceof Error ? e.message : 'failed')); });
       const backendUrl = `${backendBase}/api/search?q=${encodeURIComponent(query)}&type=all`;
       const pBackend = fetch(backendUrl, { signal: backendController.signal })
@@ -133,16 +133,29 @@ export function SearchBar({ onSelect }: SearchBarProps) {
         .catch((e: unknown) => { throw new Error('Live: ' + (e instanceof Error ? e.message : 'failed')); });
 
       Promise.allSettled([pBackend, pAlgolia]).then(settled => {
-        const backendRes = settled[0].status === 'fulfilled' ? settled[0].value as SearchResult[] : [];
-        const algoliaRes = settled[1].status === 'fulfilled' ? settled[1].value as SearchResult[] : [];
+        const backendRes = settled[0].status === 'fulfilled' ? settled[0].value as KnownMedia[] : [];
+        const algoliaRes = settled[1].status === 'fulfilled' ? settled[1].value as KnownMedia[] : [];
         const errs: string[] = [];
         if (settled[0].status === 'rejected') errs.push((settled[0].reason as Error).message || 'live error');
         if (settled[1].status === 'rejected') errs.push((settled[1].reason as Error).message || 'algolia error');
         const seen = new Set<string>();
-        const combined: SearchResult[] = [];
+        const combined: KnownMedia[] = [];
         for (const src of [backendRes, algoliaRes]) {
           for (const item of src) {
-            const uniqueKey = `${item.type || item.media_type || ''}_${item.external_id || item.id || item.objectID || item.title || item.name || item.key}`;
+            // Use explicit property access and type guards
+            let type = '';
+            if ('type' in item && typeof item.type === 'string') type = item.type;
+            else if ('media_type' in item && typeof item.media_type === 'string') type = item.media_type;
+            let id = '';
+            if ('external_id' in item && item.external_id) id = String(item.external_id);
+            else if ('id' in item && item.id) id = String(item.id);
+            else if ('objectID' in item && item.objectID) id = String(item.objectID);
+            let title = '';
+            if ('title' in item && item.title) title = String(item.title);
+            else if ('name' in item && item.name) title = String(item.name);
+            let key = '';
+            if ('key' in item && item.key) key = String(item.key);
+            const uniqueKey = `${type}_${id || title || key}`;
             if (!seen.has(uniqueKey)) { seen.add(uniqueKey); combined.push(item); }
           }
         }
