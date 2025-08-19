@@ -1,3 +1,12 @@
+/* Media tile image styles for Next.js Image best practices */
+.media-tile-image {
+  object-fit: cover;
+  border-radius: 8px;
+  transition: transform 0.3s ease;
+}
+.media-tile-image:hover {
+  transform: scale(1.05);
+}
 @import "tailwindcss";
 
 

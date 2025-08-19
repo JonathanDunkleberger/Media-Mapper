@@ -32,7 +32,26 @@ function FavoriteButton({ id }: { id: string | number }) {
 }
 
 export function MediaCard({ item }: MediaCardProps) {
-  const initialImg = getImageUrl(item) ?? '';
+  // Determine image src and fallback based on media type
+  let initialImg = getImageUrl(item) ?? '';
+  let alt = getTitle(item) || 'Untitled';
+  // TMDB
+  if ('poster_path' in item && item.poster_path) {
+    initialImg = item.poster_path.startsWith('http')
+      ? item.poster_path
+      : `https://image.tmdb.org/t/p/w500${item.poster_path}`;
+    alt = getTitle(item) || 'Movie/TV Poster';
+  }
+  // IGDB
+  if ((item as any).cover?.image_id) {
+    initialImg = `https://images.igdb.com/igdb/image/upload/t_cover_big/${(item as any).cover.image_id}.jpg`;
+    alt = getTitle(item) || 'Game Cover';
+  }
+  // Google Books
+  if ((item as any).volumeInfo?.imageLinks?.thumbnail) {
+    initialImg = (item as any).volumeInfo.imageLinks.thumbnail.replace('http://', 'https://');
+    alt = getTitle(item) || 'Book Cover';
+  }
   const stdImage = (typeof item === 'object' && item && 'image' in item) ? (item as { image?: { aspectRatio?: number } }).image : undefined;
   const aspectRatio = useMemo(() => {
     if (stdImage && typeof stdImage.aspectRatio === 'number' && stdImage.aspectRatio > 0) {
@@ -71,14 +90,15 @@ export function MediaCard({ item }: MediaCardProps) {
           {imgSrc ? (
             <Image
               src={imgSrc}
+              alt={alt}
+              width={200}
+              height={300}
+              className="media-tile-image h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-[1.06]"
               onError={handleError}
-              alt={title}
-              className="h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-[1.06]"
-              fill
-              sizes="(max-width: 768px) 100vw, 160px"
-              style={{ objectFit: 'cover', objectPosition: 'center' }}
               loading="lazy"
-              unoptimized
+              unoptimized={true}
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              priority={false}
             />
           ) : (
             <div className="h-full w-full flex items-center justify-center bg-[var(--xprime-surface-alt)] text-[var(--xprime-muted)] text-xs">No Image</div>
