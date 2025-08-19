@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import axios, { AxiosError } from 'axios';
+import axios from 'axios';
 import { MediaCard } from './MediaCard';
 import type { KnownMedia } from '../types/media';
 import { getId } from '../utils/mediaHelpers';

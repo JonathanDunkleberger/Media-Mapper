@@ -6,7 +6,7 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-export async function GET(_req: NextRequest) {
+export async function GET() {
   try {
     const { data, error } = await supabase.from('books').select('*');
     if (error) throw error;

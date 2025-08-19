@@ -7,7 +7,7 @@ const supabase = createClient(
 );
 
 // GET /api/favorites
-export async function GET(_req: NextRequest) {
+export async function GET() {
   try {
     const { data, error } = await supabase.from('favorites').select('*');
     if (error) throw error;

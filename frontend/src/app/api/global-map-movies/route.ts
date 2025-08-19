@@ -21,7 +21,11 @@ async function fetchTopMoviesByCountry(countryCode: string, apiKey: string): Pro
     const res = await fetch(url, { next: { revalidate: 3600 } });
     if (!res.ok) return [];
     const json: unknown = await res.json();
-    const arr: unknown[] = (json && typeof json === 'object' && 'results' in json && Array.isArray((json as any).results)) ? (json as any).results : [];
+    let arr: unknown[] = [];
+    if (typeof json === 'object' && json !== null && 'results' in json) {
+      const potential = (json as { results?: unknown }).results;
+      if (Array.isArray(potential)) arr = potential;
+    }
     return arr.slice(0, 3).map((raw) => {
       const m = raw as { id?: unknown; title?: unknown; poster_path?: unknown };
       const id = typeof m.id === 'number' ? m.id : Math.floor(Math.random() * 1e9);

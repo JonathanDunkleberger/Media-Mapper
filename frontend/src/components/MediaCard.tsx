@@ -13,7 +13,7 @@ type MediaCardProps = {
   item: KnownMedia;
 };
 
-function FavoriteButton({ id }: { id: string | number }) {
+function FavoriteButton({ id }: { id: string | number }) { // id reserved for future server sync
   const [isFavorite, setIsFavorite] = React.useState(false);
   return (
     <button
