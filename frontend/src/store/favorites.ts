@@ -66,7 +66,8 @@ export const useFavorites = create<FavoritesState>((set, get) => ({
   setAll: (items: MediaItem[]) => set({ items: dedupe(items) }),
   mergeAll: (incoming) => {
     const map = new Map(get().items.map(i => [keyOf(i), i] as const));
-    for (const it of incoming) map.set(keyOf(it), it);
+  // Quick fix: assert partial incoming items as MediaItem (trusted API source)
+  for (const it of incoming) map.set(keyOf(it), it as MediaItem);
     const merged = [...map.values()];
     if (typeof window !== 'undefined') window.localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
     set({ items: merged });
