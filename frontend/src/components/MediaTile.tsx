@@ -16,8 +16,8 @@ export default function MediaTile({ item, showQuickFav = true }: { item: MediaIt
     <Link href={`/media/${item.type}/${item.id}`} className="group relative block">
       <div className="rounded-xl overflow-hidden bg-zinc-800/40 ring-1 ring-white/10">
         <SafeImage
-          src={item.posterUrl}
-          alt={item.title}
+          src={item.posterUrl || '/placeholder-media.png'}
+          alt={item.title || 'Untitled'}
           w={300}
           h={450}
           className="h-[270px] w-[180px] object-cover transition-transform duration-200 group-hover:scale-[1.03]"
@@ -26,8 +26,8 @@ export default function MediaTile({ item, showQuickFav = true }: { item: MediaIt
       <div className="pointer-events-none absolute inset-0 rounded-xl bg-black/0 group-hover:bg-black/35 transition-colors" />
       <div className="absolute inset-x-1 bottom-1 flex items-start justify-between gap-2 opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0 transition-all">
         <div className="max-w-[75%] space-y-0.5">
-          <p className="text-sm font-semibold leading-5 line-clamp-2 drop-shadow">{item.title}</p>
-          <p className="text-[11px] text-zinc-200/90 tracking-wide font-medium">{item.type.toUpperCase()}{item.year ? ` • ${item.year}` : ''}</p>
+          <p className="text-sm font-semibold leading-5 line-clamp-2 drop-shadow">{item.title || 'Untitled'}</p>
+          <p className="text-[11px] text-zinc-200/90 tracking-wide font-medium">{(item.type && typeof item.type === 'string' ? item.type.toUpperCase() : 'MEDIA')}{item?.year ? ` • ${item.year}` : ''}</p>
         </div>
   {showQuickFav && <button
           aria-label={isFav ? 'Remove Favorite' : 'Add Favorite'}

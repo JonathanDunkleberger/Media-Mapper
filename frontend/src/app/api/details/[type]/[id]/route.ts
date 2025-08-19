@@ -43,7 +43,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ type: s
         title,
         year,
   posterUrl: tmdbPosterUrl(raw.poster_path, 'w500'),
-        sublabel: `${type.toUpperCase()}${year ? ` • ${year}` : ''}`,
+  sublabel: `${(typeof type === 'string' && type ? type.toUpperCase() : 'MEDIA')}${year ? ` • ${year}` : ''}`,
         overview: raw.overview ?? null,
         genres: (raw.genres || []).map(g => g.name).filter(Boolean) as string[],
         rating: [],

@@ -21,7 +21,7 @@ export async function GET() {
     title: r.title,
     posterUrl: r.poster_url,
     year: r.year ?? null,
-    sublabel: r.media_type.toUpperCase() + (r.year ? ` • ${r.year}` : ''),
+  sublabel: (r.media_type && typeof r.media_type === 'string' ? r.media_type.toUpperCase() : 'MEDIA') + (r.year ? ` • ${r.year}` : ''),
   }));
   return NextResponse.json({ items });
 }
