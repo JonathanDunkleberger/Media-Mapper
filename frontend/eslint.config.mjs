@@ -11,6 +11,18 @@ const compat = new FlatCompat({
 
 const eslintConfig = [
   ...compat.extends("next/core-web-vitals", "next/typescript"),
+  {
+    rules: {
+      // Enforce using env client/server modules instead of raw process.env access
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "MemberExpression[object.name='process'][property.name='env']",
+          message: 'Use env client/server modules; do not access process.env directly.',
+        },
+      ],
+    },
+  },
 ];
 
 export default eslintConfig;

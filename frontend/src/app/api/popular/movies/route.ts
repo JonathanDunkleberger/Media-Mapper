@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { tmdbJson } from '@/lib/tmdb';
+import { upstreamError } from '@/lib/api-error';
 import { mapMovies, TMDBMovie } from '@/lib/map';
 
 export const revalidate = 300; // short cache; paging handled dynamically
@@ -51,7 +52,6 @@ export async function GET(req: Request) {
   headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=60');
   return NextResponse.json({ items: mapMovies(list).slice(0, take) }, { headers });
   } catch (e) {
-    const message = e instanceof Error ? e.message : 'failed to load';
-    return NextResponse.json({ error: message }, { status: 502 });
+    return upstreamError('TMDB', e, 502);
   }
 }
