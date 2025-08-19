@@ -1,4 +1,17 @@
 # Media Mapper Frontend
+/*
+Goal: Refactor MediaMapper’s gallery UI to a robust "XPrime/Netflix"-style system:
+- Rebuild MediaTile, MediaRowCarousel, and Home rows.
+- SafeImage wrapper + placeholder fallback.
+- Fully typed (no any). Works with TMDB v3 or v4 via helper.
+- Categories: Movies, TV/Anime, Games, Books.
+- Tiles: hover overlay meta; click -> detail route.
+- Rows: keyboard / drag scroll + arrow buttons.
+- Skeleton loading states.
+- Use only internal Next API routes (no direct secret exposure).
+- Minimal next.config.js image remotePatterns.
+Acceptance criteria: 4+ rows, no broken images, hover overlay, navigation works, low CLS, lazy images, clean lint/TS.
+*/
 
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
@@ -8,19 +21,23 @@ First, run the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+ 
+```text
+Goal: Refactor MediaMapper’s gallery UI to a robust "XPrime/Netflix"-style system:
+
+List:
+ - Rebuild MediaTile, MediaRowCarousel, and Home rows.
+ - SafeImage wrapper + placeholder fallback.
+ - Fully typed (no any). Works with TMDB v3 or v4 via helper.
+ - Categories: Movies, TV/Anime, Games, Books.
+ - Tiles: hover overlay meta; click -> detail route.
+ - Rows: keyboard / drag scroll + arrow buttons.
+ - Skeleton loading states.
+ - Use only internal Next API routes (no direct secret exposure).
+ - Minimal next.config.js image remotePatterns.
+
+Acceptance criteria: 4+ rows, no broken images, hover overlay, navigation works, low CLS, lazy images, clean lint/TS.
 ```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
 ## Learn More
 
