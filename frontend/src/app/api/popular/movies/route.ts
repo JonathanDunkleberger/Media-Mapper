@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { tmdbJson } from '@/lib/tmdb.server';
+import { fetchJSON } from '@/lib/upstream';
+import { env } from '@/lib/env.server';
 import { mapMovies, TMDBMovie } from '@/lib/map';
 import { createJsonRoute } from '@/lib/api/route-factory';
 
@@ -23,29 +24,39 @@ export const GET = createJsonRoute({
     const collected: TMDBMovie[] = [];
     let curPage = page;
     const baseSort = mode === 'top_rated' ? 'vote_average.desc' : 'popularity.desc';
+    const apiKey = env.TMDB_API_KEY || env.TMDB_V4_TOKEN;
+    if (!apiKey) {
+      return [];
+    }
+    let fetchError = null;
     if (mode === 'trending' && !genres) {
       while (collected.length < take && curPage < page + 5) {
-        const data = await tmdbJson<TMDBResp>(`/trending/movie/day`, { page: String(curPage) });
-        collected.push(...(data.results || []));
-        if (!data.results || data.results.length < 20) break;
+        const url = `https://api.themoviedb.org/3/trending/movie/day?page=${curPage}&language=en-US`;
+        const data = await fetchJSON(url, { headers: { Authorization: `Bearer ${apiKey}` } }, 'tmdb-movie');
+        if (!data.ok) { fetchError = data; break; }
+        collected.push(...(data.data?.results || []));
+        if (!data.data?.results || data.data.results.length < 20) break;
         curPage++;
       }
     } else {
       while (collected.length < take && curPage < page + 5) {
-        const params: Record<string,string> = {
+        const params = new URLSearchParams({
           sort_by: baseSort,
           include_adult: 'false',
           page: String(curPage),
-          language: 'en-US'
-        };
-        if (genres) params.with_genres = genres;
-        if (mode === 'top_rated') params['vote_count.gte'] = '200';
-        const data = await tmdbJson<TMDBResp>('/discover/movie', params);
-        collected.push(...(data.results || []));
-        if (!data.results || data.results.length < 20) break;
+          language: 'en-US',
+        });
+        if (genres) params.set('with_genres', genres);
+        if (mode === 'top_rated') params.set('vote_count.gte', '200');
+        const url = `https://api.themoviedb.org/3/discover/movie?${params.toString()}`;
+        const data = await fetchJSON(url, { headers: { Authorization: `Bearer ${apiKey}` } }, 'tmdb-movie');
+        if (!data.ok) { fetchError = data; break; }
+        collected.push(...(data.data?.results || []));
+        if (!data.data?.results || data.data.results.length < 20) break;
         curPage++;
       }
     }
+    if (fetchError) return fetchError;
     let list: TMDBMovieWithGenres[] = collected as TMDBMovieWithGenres[];
     if (genres && mode === 'trending') {
       const genreSet = new Set(genres.split(','));
