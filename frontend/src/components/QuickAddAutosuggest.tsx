@@ -5,7 +5,7 @@ import { useToast } from '@/components/ui/ToastProvider';
 import Link from 'next/link';
 import { fetchInternalAPI } from '@/lib/api';
 import { apiUrl } from '@/lib/api-base';
-import { TileImage } from './TileImage';
+import TileImage from './TileImage';
 
 type Item = {
   id: string | number;

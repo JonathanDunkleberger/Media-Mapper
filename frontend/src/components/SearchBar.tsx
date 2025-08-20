@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { TileImage } from './TileImage';
+import TileImage from './TileImage';
 import algoliasearch from 'algoliasearch/lite';
 import { fetchInternalAPI } from '@/lib/api';
 import { apiUrl } from '@/lib/api-base';

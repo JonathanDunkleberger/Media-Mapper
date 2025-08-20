@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { TileImage } from './TileImage';
+import TileImage from './TileImage';
 import type { MediaItem } from '@/lib/types';
 import { useFavorites, useToggleFavorite } from '@/hooks/useFavorites';
 import { usePrefetchDetails } from '@/hooks/usePrefetchDetails';

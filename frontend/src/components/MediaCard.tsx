@@ -1,6 +1,6 @@
 'use client';
 import React from 'react';
-import { TileImage } from './TileImage';
+import TileImage from './TileImage';
 import { FaHeart } from 'react-icons/fa';
 import Link from 'next/link';
 import type { KnownMedia } from '../types/media';

@@ -5,7 +5,6 @@ import { booksSearch, GoogleVolumeRaw } from '@/lib/books';
 import { mapMovies, mapTV, mapGamesIGDB, mapBooksGoogle, TMDBMovie, TMDBTV } from '@/lib/map';
 import type { MediaItem } from '@/lib/types';
 import { createJsonRoute } from '@/lib/api/route-factory';
-import { searchMedia } from '@/lib/search';
 
 const Query = z.object({
   q: z.string().trim().min(1),

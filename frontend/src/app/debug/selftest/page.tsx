@@ -1,5 +1,5 @@
 "use client";
-import { TileImage } from "@/components/TileImage";
+import TileImage from "@/components/TileImage";
 
 const knownGood = [
   {

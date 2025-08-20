@@ -1,6 +1,6 @@
 'use client';
 import React from 'react';
-import { TileImage } from './TileImage';
+import TileImage from './TileImage';
 import type { KnownMedia } from '../types/media';
 import { getId, getTitle, getImageUrl, getMediaType } from '../utils/mediaHelpers';
 

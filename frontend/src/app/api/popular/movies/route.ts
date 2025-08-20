@@ -2,7 +2,6 @@ import { z } from 'zod';
 import { tmdbJson } from '@/lib/tmdb.server';
 import { mapMovies, TMDBMovie } from '@/lib/map';
 import { createJsonRoute } from '@/lib/api/route-factory';
-import { getPopularMovies } from '@/lib/tmdb';
 
 interface TMDBMovieWithGenres extends TMDBMovie { genre_ids?: number[] }
 interface TMDBResp { results?: TMDBMovieWithGenres[] }
