@@ -7,7 +7,8 @@ import { tmdbPosterUrl } from '@/lib/images';
 import { EnrichedMediaDetail } from '@/lib/detailTypes';
 import { zEnrichedDetail } from '@/lib/schemas/details';
 
-export const revalidate = 86400; // 24h for stable core details
+export const runtime = "nodejs";
+export const revalidate = 0;
 
 // --- Helpers ---
 async function howLongToBeatSearch(): Promise<{ mainStory?: number; mainExtra?: number; completionist?: number }> {
