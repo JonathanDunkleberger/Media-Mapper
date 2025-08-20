@@ -1,5 +1,5 @@
 // server-only removed for test compatibility
-import { envServer } from '@/lib/env-server';
+import { envServer } from '@/lib/env.server';
 
 let cache: { token: string; exp: number } | null = null;
 

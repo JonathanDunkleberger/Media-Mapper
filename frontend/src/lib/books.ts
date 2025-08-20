@@ -1,8 +1,8 @@
 ;(async () => { try { await import('server-only'); } catch { /* ignored */ }})();
 
-import { env } from './env';
+import { envServer } from './env.server';
 import { fetchJSON, HttpError } from './http';
-const GOOGLE_KEY = env.GOOGLE_BOOKS_API_KEY;
+const GOOGLE_KEY = envServer.GOOGLE_BOOKS_API_KEY;
 
 export interface GoogleVolumeRaw {
   id: string;

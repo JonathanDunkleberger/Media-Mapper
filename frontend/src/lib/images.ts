@@ -2,9 +2,9 @@
 // Tile priority: TMDB poster -> TMDB backdrop -> IGDB cover (abs) -> Google Books thumb (abs) -> placeholder -> null
 // Backdrop/hero: backdrop -> poster -> null
 
-import { env } from './env';
+import { envServer } from './env.server';
 const DEFAULT_PLACEHOLDER = '/placeholder-media.png';
-export const TMDB_IMG_BASE = env.TMDB_IMG_BASE || 'https://image.tmdb.org/t/p';
+export const TMDB_IMG_BASE = envServer.TMDB_IMG_BASE || 'https://image.tmdb.org/t/p';
 
 export function buildImageUrl(base: string, pathOrUrl?: string | null): string | null {
   if (!pathOrUrl) return null;

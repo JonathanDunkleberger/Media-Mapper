@@ -1,5 +1,5 @@
 // server-only removed for test compatibility (handled via env validation)
-import { envServer } from '@/lib/env-server';
+import { envServer } from '@/lib/env.server';
 import { fetchJSON, HttpError } from './http';
 import { getIgdbToken } from './igdb-token';
 

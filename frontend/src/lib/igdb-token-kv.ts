@@ -3,7 +3,7 @@
 // Only import this if @vercel/kv is installed & configured.
 // @ts-ignore - optional dep
 import { kv } from '@vercel/kv';
-import { envServer } from '@/lib/env-server';
+import { envServer } from '@/lib/env.server';
 
 const KEY = 'igdb:oauth';
 
