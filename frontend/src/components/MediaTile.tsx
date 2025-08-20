@@ -2,18 +2,22 @@
 import Link from 'next/link';
 import { SafeImage } from './SafeImage';
 import type { MediaItem } from '@/lib/types';
-import { useFavorites } from '@/store/favorites';
-import { useSession } from '@/lib/useSession';
+import { useFavoritesQuery, useToggleFavorite } from '@/hooks/useFavorites';
+import { usePrefetchDetails } from '@/hooks/usePrefetchDetails';
 import { useToast } from '@/components/ui/ToastProvider';
-import { fetchInternalAPI } from '@/lib/api';
 
 export default function MediaTile({ item, showQuickFav = true }: { item: MediaItem; showQuickFav?: boolean }) {
-  const { items, toggle } = useFavorites();
-  const token = useSession();
-  const isFav = items.some((i: MediaItem) => i.type === item.type && i.id === item.id);
+  const { data: favorites } = useFavoritesQuery();
+  const { add, remove } = useToggleFavorite();
+  const prefetch = usePrefetchDetails(item.type);
   const push = useToast();
+  const isFav = !!favorites?.some(f => String(f.id) === String(item.id));
   return (
-    <Link href={`/media/${item.type}/${item.id}`} className="group relative block">
+    <Link
+      href={`/media/${item.type}/${item.id}`}
+      className="group relative block"
+      onMouseEnter={() => prefetch(Number(item.id))}
+    >
       <div className="rounded-xl overflow-hidden bg-zinc-800/40 ring-1 ring-white/10">
         <SafeImage
           src={item.posterUrl || '/placeholder-media.png'}
@@ -31,30 +35,17 @@ export default function MediaTile({ item, showQuickFav = true }: { item: MediaIt
         </div>
   {showQuickFav && <button
           aria-label={isFav ? 'Remove Favorite' : 'Add Favorite'}
-          onClick={async (e) => {
+          disabled={add.isPending || remove.isPending}
+          onClick={(e) => {
             e.preventDefault();
-            const wasFav = isFav;
-            // optimistic
-            toggle(item);
-            if (token) {
-              try {
-                await fetchInternalAPI(`/api/favorites`, {
-                  method: 'POST',
-                  headers: { 'content-type': 'application/json' },
-                  body: JSON.stringify({ action: wasFav ? 'remove' : 'add', item }),
-                });
-                push(wasFav ? 'Removed from favorites' : 'Added to favorites', { type: 'success', ttl: 2500 });
-              } catch {
-                // rollback
-                toggle(item);
-                push('Favorite update failed', { type: 'error' });
-              }
+            if (isFav) {
+              remove.mutate(Number(item.id), { onSuccess: () => push('Removed from favorites', { type: 'success', ttl: 2000 }) });
             } else {
-              push(wasFav ? 'Removed locally' : 'Added locally', { type: 'info', ttl: 2000 });
+              add.mutate({ id: Number(item.id), category: item.type, title: item.title, poster: item.posterUrl ?? undefined }, { onSuccess: () => push('Added to favorites', { type: 'success', ttl: 2000 }) });
             }
           }}
-          className={`pointer-events-auto rounded-full px-2 py-1 text-xs font-bold transition ${isFav ? 'bg-rose-500 text-white hover:bg-rose-400' : 'bg-white/90 text-black hover:bg-white'}`}
-  >{isFav ? '✓' : '＋'}</button>}
+          className={`pointer-events-auto rounded-full px-2 py-1 text-xs font-bold transition disabled:opacity-50 ${isFav ? 'bg-rose-500 text-white hover:bg-rose-400' : 'bg-white/90 text-black hover:bg-white'}`}
+  >{isFav ? '★' : '☆'}</button>}
       </div>
     </Link>
   );
