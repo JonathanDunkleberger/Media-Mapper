@@ -19,23 +19,32 @@ export default async function Page({ params }: { params: Promise<DetailParams> }
   const resolved = await params;
   const base = await getRequestBaseUrl();
   const cat = resolved.category;
-  const id = Number(resolved.id);
+  const idNum = Number(resolved.id);
+
+  if (!resolved.id || Number.isNaN(idNum) || idNum <= 0) {
+    // Return a lightweight error boundary style response; avoid throwing to keep consistent with dynamic route behavior.
+    return (
+      <main className="min-h-screen flex items-center justify-center text-red-500">
+        Invalid ID
+      </main>
+    );
+  }
 
   const qc = new QueryClient();
 
   await qc.prefetchQuery({
-    queryKey: keys.details(cat, id),
-    queryFn: async () => mustOk<MediaDetails>(await fetch(`${base}/api/details/${cat}/${id}`, { cache: 'no-store' })),
+    queryKey: keys.details(cat, idNum),
+    queryFn: async () => mustOk<MediaDetails>(await fetch(`${base}/api/details/${cat}/${idNum}`, { cache: 'no-store' })),
   });
 
   await qc.prefetchQuery({
-    queryKey: keys.recommend(cat, id),
-    queryFn: async () => mustOk<MediaItem[]>(await fetch(`${base}/api/recommend/${cat}/${id}?page=1&take=20`, { cache: 'no-store' })),
+    queryKey: keys.recommend(cat, idNum),
+    queryFn: async () => mustOk<MediaItem[]>(await fetch(`${base}/api/recommend/${cat}/${idNum}?page=1&take=20`, { cache: 'no-store' })),
   });
 
   return (
     <HydrationBoundary state={dehydrate(qc)}>
-      <DetailsClient category={cat} id={id} />
+      <DetailsClient category={cat} id={idNum} />
     </HydrationBoundary>
   );
 }

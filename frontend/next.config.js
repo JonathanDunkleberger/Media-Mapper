@@ -22,15 +22,6 @@ const nextConfig = {
     ]
     // To bypass optimizer temporarily, you can add: , unoptimized: true
   },
-  async redirects() {
-    return [
-      {
-        source: '/:mediaType/:id',
-        destination: '/details/:mediaType/:id',
-        permanent: true,
-      },
-    ];
-  },
   async headers() {
     const csp = [
       "default-src 'self'",

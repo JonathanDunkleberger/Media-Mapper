@@ -34,6 +34,9 @@ const Params = z.object({ type: z.enum(['movie','tv','game','book']), id: z.stri
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const GET = async (_req: Request, ctx: any) => {
   const { type, id } = Params.parse(ctx.params);
+  if (!id || Number.isNaN(Number(id))) {
+    return NextResponse.json({ ok: false, error: 'Invalid ID parameter' }, { status: 400 });
+  }
   try {
     if (type === 'movie' || type === 'tv') {
   interface TmdbDetail { id: number; title?: string; name?: string; overview?: string; poster_path?: string | null; backdrop_path?: string | null; genres?: { name?: string }[]; runtime?: number | null; episode_run_time?: number[]; number_of_episodes?: number; tagline?: string; status?: string; budget?: number; revenue?: number; original_language?: string; release_date?: string; first_air_date?: string; adult?: boolean; content_ratings?: { results?: { iso_3166_1?: string; rating?: string }[] }; certifications?: unknown; } // simplified

@@ -5,6 +5,9 @@ interface LegacyParams { mediaType: string; id: string }
 // Using loose typing here due to Next.js type inference quirk on redirect-only legacy page.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export default function LegacyDetailRedirect(props: any) {
-  const { mediaType, id } = props.params;
+  const { mediaType, id } = props.params || {};
+  if (!mediaType || !id || Number.isNaN(Number(id))) {
+    redirect('/');
+  }
   redirect(`/details/${mediaType}/${id}`);
 }
