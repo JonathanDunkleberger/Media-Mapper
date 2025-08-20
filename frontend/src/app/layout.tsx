@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
 import { AuthProvider } from "../context/AuthContext";
@@ -10,16 +9,6 @@ import { FavoritesSyncOnSignIn } from '@/components/FavoritesSyncOnSignIn';
 import FavoritesHydrateOnSignIn from '@/components/FavoritesHydrateOnSignIn';
 import { ToastProvider } from '@/components/ui/ToastProvider';
 import HeaderActions from '@/components/HeaderActions';
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -33,7 +22,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-zinc-950 text-white`}>
+      <body className={`antialiased min-h-screen bg-zinc-950 text-white`}>
         <Providers>
         <AuthProvider>
           <ToastProvider>
