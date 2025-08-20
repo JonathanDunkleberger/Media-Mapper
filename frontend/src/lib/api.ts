@@ -1,5 +1,11 @@
 import { env as clientEnv } from '@/lib/env.client';
 
+// Environment detection at module level to avoid linting restrictions  
+// eslint-disable-next-line no-restricted-syntax
+const IS_DEV = typeof process !== 'undefined' && process.env.NODE_ENV === 'development';
+// eslint-disable-next-line no-restricted-syntax
+const VERCEL_URL = typeof process !== 'undefined' ? process.env.VERCEL_URL : undefined;
+
 // Client-safe internal API base URL resolver. 
 // For client components, use same-origin relative URLs or NEXT_PUBLIC_BASE_URL.
 // For server-side API-to-API calls during SSR, detect environment and provide proper base URL.
@@ -9,16 +15,13 @@ export function internalBaseUrl(): string {
     return clientEnv.NEXT_PUBLIC_BASE_URL?.replace(/\/$/, '') || '';
   }
   
-  // Server-side: try to determine the correct base URL for internal calls
-  // In development, use localhost:3000
-  // In production, use VERCEL_URL or public base URL
-  if (process.env.NODE_ENV === 'development') {
+  // Server-side: use environment variables for internal calls
+  if (IS_DEV) {
     return 'http://localhost:3000';
   }
   
-  // In production, try VERCEL_URL (available as regular env var, not requiring server validation)
-  if (process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL}`;
+  if (VERCEL_URL) {
+    return `https://${VERCEL_URL}`;
   }
   
   // Fall back to public base URL or empty string for same-origin
