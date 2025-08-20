@@ -33,7 +33,7 @@ export default function SearchAutosuggest() {
     else if (e.key === 'ArrowUp') { e.preventDefault(); setHighlight(h => Math.max(0, h - 1)); }
     else if (e.key === 'Enter') {
       const it = items[highlight];
-      if (it) window.location.href = `/media/${it.type}/${it.id}`;
+      if (it) window.location.href = `/detail/${it.type}/${it.id}`;
     } else if (e.key === 'Escape') { setOpen(false); }
   };
 
@@ -57,7 +57,7 @@ export default function SearchAutosuggest() {
           {items.map((it, idx) => (
             <li key={`${it.type}-${it.id}`} role="option" aria-selected={highlight === idx}>
               <Link
-                href={`/media/${it.type}/${it.id}`}
+                href={`/detail/${it.type}/${it.id}`}
                 className={`flex items-center gap-3 rounded p-2 hover:bg-white/5 ${highlight === idx ? 'bg-white/10' : ''}`}
                 onMouseEnter={() => setHighlight(idx)}
               >
