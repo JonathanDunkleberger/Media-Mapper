@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { tmdbJson } from '@/lib/tmdb.server';
 import { mapMovies, TMDBMovie } from '@/lib/map';
 import { createJsonRoute } from '@/lib/api/route-factory';
+import { getPopularMovies } from '@/lib/tmdb';
 
 interface TMDBMovieWithGenres extends TMDBMovie { genre_ids?: number[] }
 interface TMDBResp { results?: TMDBMovieWithGenres[] }
@@ -13,7 +14,8 @@ const Query = z.object({
   genres: z.string().optional(),
 });
 
-export const runtime = 'edge';
+const isStabilityMode = process.env.NEXT_PUBLIC_STABILITY_MODE === '1';
+export const runtime = isStabilityMode ? 'nodejs' : 'edge';
 
 export const GET = createJsonRoute({
   schema: Query,

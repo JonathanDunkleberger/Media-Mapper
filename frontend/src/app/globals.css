@@ -107,3 +107,5 @@ body {
   padding-right: 2rem;
 }
 
+.tile { min-height: 10px; }
+

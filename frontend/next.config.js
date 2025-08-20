@@ -1,6 +1,10 @@
+const isStabilityMode = process.env.NEXT_PUBLIC_STABILITY_MODE === '1';
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  reactStrictMode: false, // Per stability mode request
   images: {
+    unoptimized: isStabilityMode, // Per stability mode request
     remotePatterns: [
       { protocol: 'https', hostname: 'image.tmdb.org' },
       { protocol: 'https', hostname: 'images.igdb.com' },
@@ -58,4 +62,4 @@ const nextConfig = {
   }
 };
 
-module.exports = nextConfig;
+export default nextConfig;

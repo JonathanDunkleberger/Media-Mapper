@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { SafeImage } from './SafeImage';
+import { TileImage } from './TileImage';
 import algoliasearch from 'algoliasearch/lite';
 import { fetchInternalAPI } from '@/lib/api';
 import { apiUrl } from '@/lib/api-base';
@@ -76,7 +76,7 @@ function HitsDropdown({ onSelect, close, query, loading, error, results }: HitsD
               close();
             }}
           >
-            <SafeImage src={img} alt={title} w={48} h={64} className="w-12 h-16 object-cover rounded" />
+            <TileImage src={img} alt={title} width={48} height={64} className="w-12 h-16 object-cover rounded" />
             <div className="flex flex-col">
               <span className="text-sm font-medium">{title}</span>
               <span className="text-[11px] uppercase tracking-wide text-gray-400">{mediaType}</span>
