@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
 import { AuthProvider } from "../context/AuthContext";
+import Providers from './providers';
 import Link from 'next/link';
 import QuickAddAutosuggest from '@/components/QuickAddAutosuggest';
 import { FavoritesSyncOnSignIn } from '@/components/FavoritesSyncOnSignIn';
@@ -33,6 +34,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-zinc-950 text-white`}>
+        <Providers>
         <AuthProvider>
           <ToastProvider>
           <header className="sticky top-0 z-30 bg-zinc-950/80 backdrop-blur border-b border-white/10">
@@ -49,6 +51,7 @@ export default function RootLayout({
           {children}
           </ToastProvider>
         </AuthProvider>
+        </Providers>
       </body>
     </html>
   );
