@@ -2,7 +2,7 @@ import MediaRowCarousel from '@/components/MediaRowCarousel';
 import { mapMovies, mapTV, mapGamesIGDB, mapBooksGoogle, TMDBMovie, TMDBTV, IGDBGame, GoogleVolume } from '@/lib/map';
 import type { MediaItem } from '@/lib/types';
 import { cookies } from 'next/headers';
-import FavoritesSidebar from '@/components/FavoritesSidebar';
+import FavoritesPanel from '@/components/FavoritesPanel';
 import FavoritesDrawer from '@/components/FavoritesDrawer';
 import { fetchInternalAPI } from '@/lib/api';
 import { apiUrl } from '@/lib/api-base';
@@ -47,7 +47,11 @@ export default async function Home() {
       <MediaRowCarousel title={recMode ? 'Recommended TV & Anime' : 'Top TV & Anime'} items={tv} />
       <MediaRowCarousel title={recMode ? 'Recommended Games' : 'Trending Games'} items={games} />
       <MediaRowCarousel title={recMode ? 'Recommended Books' : 'Popular Books'} items={books} />
-      <FavoritesSidebar variant="stack" minForRecommend={8} />
+      
+      {/* Favorites Panel for Desktop */}
+      <FavoritesPanel />
+      
+      {/* Favorites Drawer for Mobile */}
       <FavoritesDrawer />
     </main>
   );
