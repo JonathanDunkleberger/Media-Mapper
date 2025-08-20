@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { useFavorites } from '@/store/favorites';
+import { useFavorites } from '@/hooks/useFavorites';
 import { fetchInternalAPI } from '@/lib/api';
 
 function setCookie(name: string, value: string, maxAgeSeconds: number) {
@@ -9,7 +9,7 @@ function setCookie(name: string, value: string, maxAgeSeconds: number) {
 }
 
 export function RecommendButton() {
-  const favs = useFavorites(s => s.items);
+  const { data: favs = [] } = useFavorites();
   const [busy, setBusy] = useState(false);
 
   const run = async () => {

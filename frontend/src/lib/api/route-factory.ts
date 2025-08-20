@@ -17,8 +17,10 @@ export function createJsonRoute<Q = Record<string, unknown>>(cfg: Cfg<Q>) {
       const url = new URL(req.url);
       const q = Object.fromEntries(url.searchParams.entries());
       const query = cfg.schema ? cfg.schema.parse(q) : (q as Q);
-      const data = await cfg.run({ query });
-      const headers = new Headers();
+  const data = await cfg.run({ query });
+  const headers = new Headers();
+  const reqId = (req as any).headers?.get?.('x-request-id') || '';
+  if (reqId) headers.set('x-request-id', reqId);
       if (cfg.cacheSeconds) {
         headers.set('Cache-Control', `public, s-maxage=${cfg.cacheSeconds}, stale-while-revalidate=60`);
       }
@@ -34,10 +36,11 @@ export function createJsonRoute<Q = Record<string, unknown>>(cfg: Cfg<Q>) {
         message = err.message || `HTTP ${err.status}`;
       }
       // eslint-disable-next-line no-console
-      console.error('[api]', req.url, err);
+      const reqId = (req as any).headers?.get?.('x-request-id') || '';
+      console.error('[api]', req.url, { err, reqId });
       return NextResponse.json(
         { ok: false, error: message, details: err?.body?.slice?.(0, 300) } satisfies ApiErr,
-        { status }
+        { status, headers: reqId ? new Headers({ 'x-request-id': reqId }) : undefined }
       );
     }
   };

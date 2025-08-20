@@ -1,11 +1,12 @@
 'use client';
-import { useFavorites } from '@/store/favorites';
+import { useFavorites, useToggleFavorite } from '@/hooks/useFavorites';
 import Link from 'next/link';
 import Image from 'next/image';
 
 export default function FavoritesGrid() {
-  const items = useFavorites(s => s.items);
-  const remove = useFavorites(s => s.remove);
+  const { data: favs = [] } = useFavorites();
+  const { remove } = useToggleFavorite();
+  const items = favs.map(f => ({ id: f.id, type: f.category, title: f.title, posterUrl: f.poster ?? null, sublabel: '' }));
   if (items.length === 0) return <p className="text-sm text-zinc-400">You have no favorites yet.</p>;
 
   return (
@@ -24,7 +25,7 @@ export default function FavoritesGrid() {
             <p className="text-[10px] text-zinc-400">{it.sublabel}</p>
             <div className="flex justify-between items-center pt-1">
               <Link href={`/media/${it.type}/${it.id}`} className="text-[10px] rounded bg-white/10 px-2 py-1 hover:bg-white/20">Open</Link>
-              <button onClick={() => remove(it.type, it.id)} className="text-[10px] rounded bg-rose-500/90 hover:bg-rose-500 px-2 py-1" aria-label={`Remove ${it.title}`}>Remove</button>
+              <button onClick={() => remove.mutate(Number(it.id))} className="text-[10px] rounded bg-rose-500/90 hover:bg-rose-500 px-2 py-1" aria-label={`Remove ${it.title}`}>Remove</button>
             </div>
           </div>
         </div>

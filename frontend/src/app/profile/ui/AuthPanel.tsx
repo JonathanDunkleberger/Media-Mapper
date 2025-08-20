@@ -2,16 +2,14 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { supabaseClient } from '@/lib/supabase';
 import { useSession } from '@/lib/useSession';
-import { useFavorites } from '@/store/favorites';
-import { fetchInternalAPI } from '@/lib/api';
+import { useFavorites } from '@/hooks/useFavorites';
 
 export default function AuthPanel() {
   const token = useSession();
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
-  const items = useFavorites(s => s.items);
+  const { data: favs = [] } = useFavorites();
   const [emailAddr, setEmailAddr] = useState<string | null>(null);
-  const [serverCount, setServerCount] = useState<number | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -19,12 +17,7 @@ export default function AuthPanel() {
       if (!active) return;
       setEmailAddr(data.user?.email ?? null);
     });
-    if (token) {
-  fetchInternalAPI<{ items?: unknown[] }>(`/api/favorites`, { cache: 'no-store' })
-        .then(j => { if (active && j?.items) setServerCount(j.items.length); });
-    } else {
-      setServerCount(null);
-    }
+  // No additional server fetch needed; react-query handles favorites list.
     return () => { active = false; };
   }, [token]);
 
@@ -60,8 +53,7 @@ export default function AuthPanel() {
           {token ? (
             <>
               <p>Signed in{emailAddr ? ` as ${emailAddr}` : ''}.</p>
-              <p className="mt-2">Local favorites: {items.length}</p>
-              {serverCount !== null && <p className="mt-1">Server favorites: {serverCount}</p>}
+              <p className="mt-2">Favorites: {favs.length}</p>
               <button onClick={signOut} className="mt-4 rounded bg-white/10 px-3 py-1 text-sm hover:bg-white/20">Sign out</button>
             </>
           ) : (

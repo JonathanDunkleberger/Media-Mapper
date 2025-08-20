@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useFavorites } from '@/store/favorites';
+import { useFavorites, useToggleFavorite } from '@/hooks/useFavorites';
 import { RecommendButton, ShowTrendingButton } from '@/components/RecommendControls';
 import { XMarkIcon } from '@heroicons/react/24/solid';
 
@@ -13,12 +13,13 @@ export default function FavoritesSidebar({
   minForRecommend = 8,
   embedded = false,
 }: { variant?: Variant; minForRecommend?: number; embedded?: boolean }) {
-  const items = useFavorites(s => s.items);
-  const remove = useFavorites(s => s.remove);
+  const { data: favs = [] } = useFavorites();
+  const { remove } = useToggleFavorite();
   const [open, setOpen] = useState(true);
   const rootRef = useRef<HTMLDivElement>(null);
   const [highlightId, setHighlightId] = useState<string | null>(null);
 
+  const items = favs.map(f => ({ id: f.id, type: f.category, title: f.title, posterUrl: f.poster ?? null, sublabel: '' }));
   const count = items.length;
   const prevCount = useRef(count);
   useEffect(() => {
@@ -82,7 +83,7 @@ export default function FavoritesSidebar({
                     </div>
                     <div className="flex items-center gap-1">
                       <Link href={`/media/${it.type}/${it.id}`} className="text-[10px] rounded bg-white/10 px-2 py-1 hover:bg-white/20" title="Open detail">Open</Link>
-                      <button onClick={() => remove(it.type, it.id)} className="p-1 rounded hover:bg-white/10" aria-label={`Remove ${it.title}`} title="Remove"><XMarkIcon className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => remove.mutate(Number(it.id))} className="p-1 rounded hover:bg-white/10" aria-label={`Remove ${it.title}`} title="Remove"><XMarkIcon className="w-3.5 h-3.5" /></button>
                     </div>
                   </div>
                 </div>
@@ -103,7 +104,7 @@ export default function FavoritesSidebar({
                 </div>
                 <div className="flex items-center gap-1">
                   <Link href={`/media/${it.type}/${it.id}`} className="text-[10px] rounded bg-white/10 px-2 py-1 hover:bg-white/20">Open</Link>
-                  <button onClick={() => remove(it.type, it.id)} className="p-1 rounded hover:bg-white/10" aria-label={`Remove ${it.title}`}><XMarkIcon className="w-3.5 h-3.5" /></button>
+                  <button onClick={() => remove.mutate(Number(it.id))} className="p-1 rounded hover:bg-white/10" aria-label={`Remove ${it.title}`}><XMarkIcon className="w-3.5 h-3.5" /></button>
                 </div>
               </div>
             ))}

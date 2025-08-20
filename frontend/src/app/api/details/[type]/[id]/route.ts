@@ -30,7 +30,9 @@ import { createJsonRoute } from '@/lib/api/route-factory';
 
 const Params = z.object({ type: z.enum(['movie','tv','game','book']), id: z.string() });
 
-export const GET = async (_req: Request, ctx: { params: unknown }) => {
+// Using loose ctx typing due to framework type inference quirks for dynamic route params.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const GET = async (_req: Request, ctx: any) => {
   const { type, id } = Params.parse(ctx.params);
   try {
     if (type === 'movie' || type === 'tv') {

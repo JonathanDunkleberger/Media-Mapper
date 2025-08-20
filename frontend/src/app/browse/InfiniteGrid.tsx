@@ -4,7 +4,6 @@ import { useEffect, useRef } from 'react';
 import { qPopular, qFavoriteUpsert, qFavoriteDelete } from '@/lib/api/query';
 import { keys } from '@/lib/query-keys';
 import MediaTile from '@/components/MediaTile';
-import { useFavorites } from '@/store/favorites';
 
 export type MediaItem = {
   id: number;

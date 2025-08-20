@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from 'react';
-import { useFavorites } from '@/store/favorites';
+import { useToggleFavorite } from '@/hooks/useFavorites';
 import { useToast } from '@/components/ui/ToastProvider';
 import Link from 'next/link';
 import { fetchInternalAPI } from '@/lib/api';
@@ -20,7 +20,7 @@ export default function QuickAddAutosuggest() {
   const [open, setOpen] = useState(false);
   const [cursor, setCursor] = useState(0);
   const abortRef = useRef<AbortController | null>(null);
-  const add = useFavorites(s => s.add);
+  const { add } = useToggleFavorite();
   const toast = useToast();
 
   useEffect(() => {
@@ -41,7 +41,7 @@ export default function QuickAddAutosuggest() {
 
   const commitAdd = (it: Item) => {
     // Cast to MediaItem compatible shape
-    add({ id: it.id, type: it.type, title: it.title, posterUrl: it.posterUrl ?? null, year: it.year ?? null, sublabel: it.sublabel ?? null });
+  add.mutate({ id: Number(it.id), category: it.type, title: it.title, poster: it.posterUrl ?? undefined });
     setQ('');
     setOpen(false);
     toast(`Added “${it.title}” to favorites`, { type: 'success', ttl: 2500 });

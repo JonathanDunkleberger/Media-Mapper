@@ -1,13 +1,14 @@
 "use client";
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useFavorites } from '@/store/favorites';
+import { useFavorites } from '@/hooks/useFavorites';
 import { useFavoritesDrawer } from '@/components/FavoritesDrawer';
 import { RecommendButton, ShowTrendingButton } from '@/components/RecommendControls';
 import BrowseTrigger from '@/components/BrowseTrigger';
 
 export default function HeaderActions() {
-  const favCount = useFavorites(s => s.items.length);
+  const { data: favs = [] } = useFavorites();
+  const favCount = favs.length;
   const pathname = usePathname();
   const openDrawer = useFavoritesDrawer.getState?.().open; // safe access before store initialises
   const onHome = pathname === '/';
