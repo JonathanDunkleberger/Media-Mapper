@@ -1,8 +1,8 @@
 // Server-only helper for TMDB (v4 bearer token only)
-import { env } from './env';
+import { envServer } from './env.server';
 import { fetchJSON, HttpError } from './http';
 
-const TMDB_V4 = env.TMDB_V4_TOKEN; // long JWT-like token (Bearer)
+const TMDB_V4 = envServer.TMDB_V4_TOKEN; // long JWT-like token (Bearer)
 
 function authHeaders() { return { Authorization: `Bearer ${TMDB_V4}` } as Record<string, string>; }
 
