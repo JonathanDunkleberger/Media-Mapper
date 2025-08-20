@@ -27,12 +27,12 @@ const CACHE_CONTROL_HEADER = 'public, max-age=60, stale-while-revalidate=600';
  * On any failure (invalid URL, fetch error, timeout, non-image content),
  * it returns a placeholder SVG. This route is designed to be highly resilient.
  */
-export async function GET(req: NextRequest) {
-  const { searchParams } = req.nextUrl;
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
   const upstreamUrl = searchParams.get('u');
 
   const placeholderResponse = (host?: string) => {
-    return new NextResponse(generatePlaceholderSvg(host), {
+    return new Response(generatePlaceholderSvg(host), {
       status: 200,
       headers: {
         'Content-Type': 'image/svg+xml',
@@ -74,7 +74,7 @@ export async function GET(req: NextRequest) {
       const headers = new Headers(response.headers);
       headers.set('Cache-Control', CACHE_CONTROL_HEADER);
 
-      return new NextResponse(readableStream, {
+      return new Response(readableStream, {
         status: 200,
         headers,
       });

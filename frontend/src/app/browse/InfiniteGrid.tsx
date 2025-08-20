@@ -34,7 +34,7 @@ export default function InfiniteGrid({ cat, mode }: { cat: string; mode: string 
     }, { rootMargin: '600px 0px' });
     io.observe(sentinel.current);
     return () => io.disconnect();
-  }, [query.hasNextPage, query.isFetchingNextPage]);
+  }, [query, query.hasNextPage, query.isFetchingNextPage]);
 
   const favAdd = useMutation<{ id: number }, Error, { id: number; category: string; title: string; poster?: string }, { prev?: any[] }>({
     mutationFn: (payload) => qFavoriteUpsert(payload),
