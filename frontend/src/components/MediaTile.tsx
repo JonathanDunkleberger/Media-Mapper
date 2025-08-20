@@ -2,12 +2,12 @@
 import Link from 'next/link';
 import { SafeImage } from './SafeImage';
 import type { MediaItem } from '@/lib/types';
-import { useFavoritesQuery, useToggleFavorite } from '@/hooks/useFavorites';
+import { useFavorites, useToggleFavorite } from '@/hooks/useFavorites';
 import { usePrefetchDetails } from '@/hooks/usePrefetchDetails';
 import { useToast } from '@/components/ui/ToastProvider';
 
 export default function MediaTile({ item, showQuickFav = true }: { item: MediaItem; showQuickFav?: boolean }) {
-  const { data: favorites } = useFavoritesQuery();
+  const { data: favorites } = useFavorites();
   const { add, remove } = useToggleFavorite();
   const prefetch = usePrefetchDetails(item.type);
   const push = useToast();
