@@ -33,11 +33,11 @@ export function RecommendButton() {
     <button
       onClick={run}
       disabled={!favs.length || busy}
-      className="rounded bg-white/10 px-3 py-1 text-sm hover:bg-white/20 disabled:opacity-50"
+      className="rounded-lg bg-indigo-600 hover:bg-indigo-700 disabled:bg-white/10 px-4 py-2 text-sm font-semibold text-white disabled:text-zinc-400 disabled:opacity-50 transition-colors"
       aria-disabled={!favs.length || busy}
-      title={favs.length ? 'Show recommendations' : 'Add some favorites first'}
+      title={favs.length ? 'Get personalized recommendations' : `Add at least some favorites first`}
     >
-      {busy ? 'Preparing…' : 'Recommend'}
+      {busy ? '🎯 Preparing…' : '🎯 Get Recs'}
     </button>
   );
 }
@@ -57,10 +57,10 @@ export function ShowTrendingButton() {
   return (
     <button
       onClick={clear}
-      className="rounded bg-white/10 px-3 py-1 text-sm hover:bg-white/20"
-      title="Back to trending rows"
+      className="rounded-lg bg-zinc-600 hover:bg-zinc-700 px-3 py-2 text-sm font-medium text-white transition-colors"
+      title="Back to trending content"
     >
-      Trending
+      ← Trending
     </button>
   );
 }

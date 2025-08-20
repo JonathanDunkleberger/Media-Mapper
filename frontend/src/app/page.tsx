@@ -43,9 +43,9 @@ export default async function Home() {
 
   return (
     <main className="px-6 pb-24">
-      <MediaRowCarousel title={recMode ? 'Recommended Movies' : 'Popular Movies'} items={movies} />
+      <MediaRowCarousel title={recMode ? 'Recommended Movies' : 'Trending Movies'} items={movies} />
       <MediaRowCarousel title={recMode ? 'Recommended TV & Anime' : 'Top TV & Anime'} items={tv} />
-      <MediaRowCarousel title={recMode ? 'Recommended Games' : 'Trending Games'} items={games} />
+      <MediaRowCarousel title={recMode ? 'Recommended Games' : 'Popular Video Games'} items={games} />
       <MediaRowCarousel title={recMode ? 'Recommended Books' : 'Popular Books'} items={books} />
       <FavoritesSidebar variant="stack" minForRecommend={8} />
       <FavoritesDrawer />

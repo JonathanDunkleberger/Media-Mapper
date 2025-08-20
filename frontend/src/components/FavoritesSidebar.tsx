@@ -111,13 +111,20 @@ export default function FavoritesSidebar({
           </div>
         )}
       </div>
-      <div className="border-t border-white/10 p-3 bg-zinc-950/80 space-y-2">
-        <div className="flex gap-2">
+      <div className="border-t border-white/10 p-4 bg-zinc-950/90 space-y-3">
+        <div className="flex flex-col gap-2">
           <RecommendButton />
           <ShowTrendingButton />
         </div>
         {!canRecommend && (
-          <div className="text-[10px] leading-4 text-zinc-400">Add at least <b>{minForRecommend}</b> favorites for best recommendations.</div>
+          <div className="text-xs leading-4 text-zinc-400">
+            Add at least <span className="font-semibold text-zinc-300">{minForRecommend}</span> favorites for personalized recommendations.
+          </div>
+        )}
+        {canRecommend && favs.length < 15 && (
+          <div className="text-xs leading-4 text-zinc-400">
+            💡 Add more favorites for even better recommendations!
+          </div>
         )}
       </div>
   </Container>
