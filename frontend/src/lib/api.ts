@@ -1,16 +1,9 @@
-import { envClient } from '@/lib/env.client';
-// Client-safe internal base resolver (never imports server env)
-export function internalBaseUrl(): string {
-  if (typeof window !== 'undefined') {
-    return envClient.NEXT_PUBLIC_BASE_URL?.replace(/\/$/, '') || '';
-  }
-  // On server fall back to same-origin relative (empty) unless explicit public base set
-  return envClient.NEXT_PUBLIC_BASE_URL || '';
-}
+// Deprecated: internalBaseUrl. Use apiUrl for all internal API calls.
+
+import { apiUrl } from '@/lib/apiUrl';
 
 export async function fetchInternalAPI<T = unknown>(endpoint: string, init?: RequestInit): Promise<T> {
-  const base = internalBaseUrl().replace(/\/$/, '');
-  const url = endpoint.startsWith('http') ? endpoint : `${base}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
+  const url = apiUrl(endpoint);
   const res = await fetch(url, init);
   if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
   const ct = res.headers.get('content-type') || '';

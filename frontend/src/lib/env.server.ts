@@ -22,11 +22,7 @@ const schema = z.object({
 
 export const env = schema.parse(process.env);
 
-export function getBaseUrl() {
-  if (typeof window !== 'undefined') return '';
-  if (env.VERCEL_URL) return `https://${env.VERCEL_URL}`;
-  return '';
-}
+// Deprecated: getBaseUrl. Use relative paths for internal API calls.
 
 // Tripwire to ensure this file never ends up in a client bundle.
 if (typeof window !== 'undefined') {

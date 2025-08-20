@@ -1,9 +1,5 @@
-import { env } from '@/lib/env.client';
 
-// Returns the base (origin) for API calls on the client. If NEXT_PUBLIC_API_BASE is set, use it; otherwise same-origin ''.
-export function apiOrigin(): string {
-  return env.NEXT_PUBLIC_API_BASE?.replace(/\/$/, '') || '';
-}
+// Deprecated: apiOrigin. Use apiUrl for all internal API calls.
 
 // Normalize category singular/plural differences in one place.
 const categoryMap: Record<string,string> = {
@@ -27,5 +23,5 @@ export function apiPath(path: string): string {
 
 // Build full URL (may be relative if same-origin) combining origin + path.
 export function apiUrl(path: string): string {
-  return apiOrigin() + apiPath(path);
+  return apiPath(path);
 }
