@@ -3,6 +3,7 @@ import { useFavoritesStore } from '@/store/favorites-zustand';
 import Link from 'next/link';
 import { SafeImage } from '@/components/SafeImage';
 import { XMarkIcon } from '@heroicons/react/24/outline';
+import GetRecommendationsButton from '@/components/GetRecommendationsButton';
 
 export default function FavoritesPanel() {
   const { favorites, removeFavorite, getFavoritesCount } = useFavoritesStore();
@@ -24,11 +25,11 @@ export default function FavoritesPanel() {
     <div className="hidden lg:block fixed right-6 top-24 w-80 bg-zinc-900/90 backdrop-blur border border-white/10 rounded-lg p-4 max-h-[70vh] overflow-y-auto">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-lg font-semibold">Your Favorites ({count})</h3>
-        {count >= 8 && (
-          <button className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 rounded text-sm font-medium">
-            Get Recs
-          </button>
-        )}
+      </div>
+      
+      {/* Get Recommendations Button */}
+      <div className="mb-4">
+        <GetRecommendationsButton />
       </div>
       
       <div className="space-y-2">
