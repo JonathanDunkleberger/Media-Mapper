@@ -68,3 +68,6 @@ export const GET = createJsonRoute({
     return processed.slice(0, take);
   }
 });
+
+export const runtime = "nodejs";
+export const revalidate = 0;

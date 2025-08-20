@@ -26,3 +26,6 @@ export const GET = createJsonRoute({
     return mapGamesIGDB(data);
   }
 });
+
+export const runtime = "nodejs";
+export const revalidate = 0;

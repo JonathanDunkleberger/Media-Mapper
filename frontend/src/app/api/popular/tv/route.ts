@@ -51,3 +51,6 @@ export const GET = createJsonRoute({
     return mapTV(list).slice(0, take);
   }
 });
+
+export const runtime = "nodejs";
+export const revalidate = 0;
