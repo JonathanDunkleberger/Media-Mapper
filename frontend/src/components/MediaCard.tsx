@@ -34,7 +34,8 @@ function FavoriteButton({ id }: { id: string | number }) { // id reserved for fu
 export function MediaCard({ item }: MediaCardProps) {
   const normalized = normalizeMediaData(item);
   const { id, title, type } = normalized;
-  let imageUrl = '/placeholder-media.png';
+  // Use a single canonical placeholder that actually exists in /public
+  let imageUrl = '/placeholder-poster.png';
   if (isMovie(item) || isGame(item) || isBook(item)) {
     imageUrl = getImageUrl(item);
   }
@@ -65,7 +66,7 @@ export function MediaCard({ item }: MediaCardProps) {
   }
 
   // Fallbacks for imageUrl and title
-  const safeImageUrl = typeof imageUrl === 'string' && imageUrl.length > 0 ? imageUrl : '/placeholder-media.png';
+  const safeImageUrl = typeof imageUrl === 'string' && imageUrl.length > 0 ? imageUrl : '/placeholder-poster.png';
   const safeTitle = typeof title === 'string' && title.length > 0 ? title : 'Media Poster';
   const safeId = id ?? safeTitle;
 

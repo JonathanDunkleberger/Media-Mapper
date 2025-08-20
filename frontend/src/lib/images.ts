@@ -3,7 +3,7 @@
 // Backdrop/hero: backdrop -> poster -> null
 
 import { TMDB_IMG_BASE as PUBLIC_TMDB_IMG_BASE } from './tmdb.public';
-const DEFAULT_PLACEHOLDER = '/placeholder-media.png';
+const DEFAULT_PLACEHOLDER = '/placeholder-poster.png';
 export const TMDB_IMG_BASE = PUBLIC_TMDB_IMG_BASE; // unified base
 
 export function buildImageUrl(base: string, pathOrUrl?: string | null): string | null {

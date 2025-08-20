@@ -1,5 +1,12 @@
 import { z } from 'zod';
 
+// Augment global for dev warning flag
+declare global {
+  // Flag to avoid repeating console warning in dev
+  // (var needed for global augmentation semantics)
+  var __MM_NO_TMDB_WARNED: boolean | undefined;
+}
+
 // Flexible server-only schema: secrets optional individually, but require at least one TMDB credential.
 const isTest = process.env.VITEST_WORKER_ID !== undefined || process.env.NODE_ENV === 'test';
 
@@ -12,11 +19,20 @@ const schema = z.object({
   TMDB_IMG_BASE: z.string().url().optional(),
   VERCEL_URL: z.string().optional(),
 }).superRefine((v, ctx) => {
-  if (!isTest && !v.TMDB_V4_TOKEN && !v.TMDB_API_KEY) {
+  const prod = process.env.NODE_ENV === 'production';
+  if (prod && !isTest && !v.TMDB_V4_TOKEN && !v.TMDB_API_KEY) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       message: 'Provide TMDB_V4_TOKEN (v4) or TMDB_API_KEY (v3).',
     });
+  } else if (!prod && !v.TMDB_V4_TOKEN && !v.TMDB_API_KEY) {
+    // Dev fallback: emit a warning once so dev server keeps running with empty data.
+    if (!globalThis.__MM_NO_TMDB_WARNED) {
+      // eslint-disable-next-line no-console
+      console.warn('[env.server] No TMDB token present; movie/TV data will be empty. Set TMDB_V4_TOKEN or TMDB_API_KEY in .env.local');
+      // @ts-ignore
+      globalThis.__MM_NO_TMDB_WARNED = true;
+    }
   }
 });
 

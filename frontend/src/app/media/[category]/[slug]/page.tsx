@@ -16,7 +16,7 @@ export default async function MediaDetailPage(props: unknown) {
   const similarRaw: KnownMedia[] = [];
   const similar = similarRaw.map(item => normalizeMediaData(item));
 
-  let imageUrl = '/placeholder-media.png';
+  let imageUrl = '/placeholder-poster.png';
   if (isMovie(media) || isGame(media) || isBook(media)) {
     imageUrl = getImageUrl(media as import('../../../../types/media').MediaType);
   }

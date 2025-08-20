@@ -10,26 +10,26 @@ export function getImageUrl(media: KnownMedia): string {
   if ('background_image' in media && typeof media.background_image === 'string') return media.background_image;
 
   // MediaItem type guards
-  if (isMovie(media)) {
-    return media.poster_path
-      ? `https://image.tmdb.org/t/p/w500${media.poster_path}`
-      : '/placeholder-movie.png';
+    if (isMovie(media)) {
+      return media.poster_path
+        ? `https://image.tmdb.org/t/p/w500${media.poster_path}`
+        : '/placeholder-poster.png';
   }
-  if (isGame(media)) {
-    return media.cover && media.cover.image_id
-      ? `https://images.igdb.com/igdb/image/upload/t_cover_big/${media.cover.image_id}.jpg`
-      : '/placeholder-game.png';
+    if (isGame(media)) {
+      return media.cover && media.cover.image_id
+        ? `https://images.igdb.com/igdb/image/upload/t_cover_big/${media.cover.image_id}.jpg`
+        : '/placeholder-poster.png';
   }
-  if (isBook(media)) {
-    return media.imageLinks && media.imageLinks.thumbnail
-      ? media.imageLinks.thumbnail
-      : '/placeholder-book.png';
+    if (isBook(media)) {
+      return media.imageLinks && media.imageLinks.thumbnail
+        ? media.imageLinks.thumbnail
+        : '/placeholder-poster.png';
   }
 
   // Fallback for objects with imageLinks (legacy)
   if ('imageLinks' in media && media.imageLinks && typeof media.imageLinks === 'object' && 'thumbnail' in media.imageLinks && typeof media.imageLinks.thumbnail === 'string') return media.imageLinks.thumbnail;
 
-  return '/placeholder-media.png';
+    return '/placeholder-poster.png';
 }
 import type { KnownMedia, NormalizedMedia, MediaType } from '../types/media';
 import { isMovie, isBook, isGame } from '../types/media';
