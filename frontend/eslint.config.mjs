@@ -71,4 +71,19 @@ export default [
   { files: ['src/app/api/**','src/lib/api-base.ts','src/lib/api/**','src/lib/http/**','src/lib/query.ts','src/lib/client.ts'], rules: { 'no-raw-api/no-raw-api': 'off' } },
   // Allow process.env only in env definition modules
   { files: ['src/lib/env*.ts'], rules: { 'no-restricted-syntax': 'off' } }
+  ,
+  // Guard against importing server-only modules in client components/hooks/pages
+  {
+    files: ['src/components/**/*.{ts,tsx}','src/app/**/*.{ts,tsx}'],
+    ignores: ['src/app/api/**'],
+    rules: {
+      'no-restricted-imports': ['error', {
+        patterns: [
+          { group: ['@/lib/env.server'], message: 'Do not import server env in client code.' },
+          { group: ['@/lib/*.server'], message: 'Do not import *.server.ts from client code.' },
+          { group: ['**/*.server'], message: 'Do not import *.server.ts from client code.' }
+        ]
+      }]
+    }
+  }
 ];

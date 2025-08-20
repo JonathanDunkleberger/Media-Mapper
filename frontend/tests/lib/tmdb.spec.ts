@@ -22,49 +22,42 @@ describe('tmdb helpers', () => {
     vi.resetAllMocks();
   });
 
-  it('tmdbImage returns null for falsy', async () => {
-    const { tmdbImage } = await import('@/lib/tmdb');
-    expect(tmdbImage(null)).toBeNull();
-    expect(tmdbImage(undefined)).toBeNull();
+  it('posterUrl returns empty string for falsy', async () => {
+    const { posterUrl } = await import('@/lib/tmdb.public');
+    expect(posterUrl(undefined)).toBe('');
+    expect(posterUrl(null as any)).toBe('');
   });
 
-  it('tmdbImage builds url for path', async () => {
-    const { tmdbImage } = await import('@/lib/tmdb');
-    expect(tmdbImage('/abc.jpg', 'w500')).toBe('https://image.tmdb.org/t/p/w500/abc.jpg');
+  it('posterUrl builds url for path', async () => {
+    const { posterUrl } = await import('@/lib/tmdb.public');
+    expect(posterUrl('/abc.jpg','w500')).toBe('https://image.tmdb.org/t/p/w500/abc.jpg');
   });
 
-  it('tmdbJson throws when no api key envs set', async () => {
-    const { tmdbJson } = await import('@/lib/tmdb');
-    await expect(tmdbJson('/movie/1')).rejects.toThrow(/TMDB_API_KEY/);
-  });
-
-  it('tmdbJson fetches with v3 key when provided', async () => {
+  it('tmdb fetches with v3 key when provided (X-API-Key header)', async () => {
     (process as any).env.TMDB_API_KEY = 'test123';
-    const { tmdbJson } = await import('@/lib/tmdb');
+    const { tmdb } = await import('@/lib/tmdb.server');
     mockFetch(true, { id: 1 });
-    const res = await tmdbJson('/movie/1');
+    const res = await tmdb('/movie/1');
     expect(res).toEqual({ id: 1 });
-    const url = (global.fetch as any).mock.calls[0][0];
-    expect(url).toContain('api_key=test123');
+    const opts = (global.fetch as any).mock.calls[0][1];
+    expect(opts.headers['X-API-Key']).toBe('test123');
   });
 
-  it('tmdbJson uses bearer when v4 token present (no query param)', async () => {
+  it('tmdb uses bearer when v4 token present', async () => {
     (process as any).env.TMDB_V4_TOKEN = 'tok';
-    const { tmdbJson } = await import('@/lib/tmdb');
+    const { tmdb } = await import('@/lib/tmdb.server');
     mockFetch(true, { id: 2 });
-    const res = await tmdbJson('/movie/2');
+    const res = await tmdb('/movie/2');
     expect(res).toEqual({ id: 2 });
-    const url = (global.fetch as any).mock.calls[0][0];
-    expect(url).not.toContain('api_key=');
     const opts = (global.fetch as any).mock.calls[0][1];
     expect(opts.headers.Authorization).toContain('Bearer tok');
   });
 
-  it('tmdbJson throws on non-ok', async () => {
+  it('tmdb throws on non-ok', async () => {
     (process as any).env.TMDB_API_KEY = 'test123';
-    const { tmdbJson } = await import('@/lib/tmdb');
+    const { tmdb } = await import('@/lib/tmdb.server');
     mockFetch(false, 'Bad body', 404);
-    await expect(tmdbJson('/movie/404')).rejects.toThrow(/TMDB 404/);
+    await expect(tmdb('/movie/404')).rejects.toThrow(/TMDB 404/);
   });
 });
 

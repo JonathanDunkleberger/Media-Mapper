@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createJsonRoute } from '@/lib/api/route-factory';
-import { tmdbJson } from '@/lib/tmdb';
+import { tmdbJson } from '@/lib/tmdb.server';
 import { igdb, igdbCoverUrl, IGDBGameRaw } from '@/lib/igdb';
 import { booksGet, booksSimilar, GoogleVolumeRaw } from '@/lib/books';
 import { mapGamesIGDB, mapBooksGoogle } from '@/lib/map';

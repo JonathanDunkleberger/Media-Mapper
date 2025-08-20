@@ -12,7 +12,7 @@ const ClientEnvSchema = z.object({
   NEXT_PUBLIC_API_KEY: z.string().optional(),
 });
 
-export const env = ClientEnvSchema.parse({
+const parsed = ClientEnvSchema.parse({
   NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
   NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
   NEXT_PUBLIC_ALGOLIA_APP_ID: process.env.NEXT_PUBLIC_ALGOLIA_APP_ID,
@@ -22,4 +22,8 @@ export const env = ClientEnvSchema.parse({
   NEXT_PUBLIC_API_KEY: process.env.NEXT_PUBLIC_API_KEY,
 });
 
-export type ClientEnv = typeof env;
+export const envClient = parsed;
+// Back-compat named export (deprecated)
+export { parsed as env };
+
+export type ClientEnv = typeof parsed;

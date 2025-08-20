@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { tmdbJson } from '@/lib/tmdb';
+import { tmdbJson } from '@/lib/tmdb.server';
 import { mapTV, TMDBTV } from '@/lib/map';
 import { createJsonRoute } from '@/lib/api/route-factory';
 

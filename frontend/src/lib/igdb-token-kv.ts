@@ -1,9 +1,9 @@
-// server-only removed for test compatibility
+// IGDB OAuth token fetcher with KV cache (server-only)
 // Optional Vercel KV-backed IGDB token cache.
 // Only import this if @vercel/kv is installed & configured.
 // @ts-ignore - optional dep
 import { kv } from '@vercel/kv';
-import { envServer } from '@/lib/env-server';
+import { env } from '@/lib/env.server';
 
 const KEY = 'igdb:oauth';
 
@@ -17,8 +17,8 @@ export async function getIgdbTokenKV(): Promise<string> {
   }
 
   const body = new URLSearchParams({
-    client_id: envServer.TWITCH_CLIENT_ID || '',
-    client_secret: envServer.TWITCH_CLIENT_SECRET || '',
+  client_id: env.TWITCH_CLIENT_ID || '',
+  client_secret: env.TWITCH_CLIENT_SECRET || '',
     grant_type: 'client_credentials',
   });
   const r = await fetch('https://id.twitch.tv/oauth2/token', { method: 'POST', body });

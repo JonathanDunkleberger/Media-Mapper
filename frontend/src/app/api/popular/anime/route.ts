@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { tmdbJson } from '@/lib/tmdb';
+import { tmdbJson } from '@/lib/tmdb.server';
 import { zRawMedia } from '@/lib/schemas/media';
 import { processAnime } from '@/server/animeService';
 import { createJsonRoute } from '@/lib/api/route-factory';

@@ -1,5 +1,5 @@
-// server-only removed for test compatibility
-import { envServer } from '@/lib/env-server';
+// IGDB OAuth token fetcher (server-only)
+import { env } from '@/lib/env.server';
 
 let cache: { token: string; exp: number } | null = null;
 
@@ -8,8 +8,8 @@ export async function getIgdbToken(): Promise<string> {
   if (cache && cache.exp > now + 60_000) return cache.token;
 
   const body = new URLSearchParams({
-    client_id: envServer.TWITCH_CLIENT_ID || '',
-    client_secret: envServer.TWITCH_CLIENT_SECRET || '',
+  client_id: env.TWITCH_CLIENT_ID || '',
+  client_secret: env.TWITCH_CLIENT_SECRET || '',
     grant_type: 'client_credentials',
   });
 

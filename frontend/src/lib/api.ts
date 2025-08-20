@@ -1,12 +1,11 @@
-import { envServer } from '@/lib/env.server';
-import { env as clientEnv } from '@/lib/env.client';
-// Internal API base URL resolver that is safe on both server & client.
+import { envClient } from '@/lib/env.client';
+// Client-safe internal base resolver (never imports server env)
 export function internalBaseUrl(): string {
   if (typeof window !== 'undefined') {
-    return clientEnv.NEXT_PUBLIC_BASE_URL?.replace(/\/$/, '') || '';
+    return envClient.NEXT_PUBLIC_BASE_URL?.replace(/\/$/, '') || '';
   }
-  if (envServer.VERCEL_URL) return `https://${envServer.VERCEL_URL}`;
-  return clientEnv.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+  // On server fall back to same-origin relative (empty) unless explicit public base set
+  return envClient.NEXT_PUBLIC_BASE_URL || '';
 }
 
 export async function fetchInternalAPI<T = unknown>(endpoint: string, init?: RequestInit): Promise<T> {

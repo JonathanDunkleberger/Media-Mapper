@@ -1,5 +1,5 @@
 // server-only removed for test compatibility
-import { tmdbJson } from './tmdb';
+import { tmdb as tmdbJson } from './tmdb.server';
 import { cache } from 'react';
 
 interface TMDBGenre { id: number; name: string }

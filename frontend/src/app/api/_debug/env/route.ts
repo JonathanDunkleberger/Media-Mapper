@@ -1,9 +1,14 @@
 import { NextResponse } from 'next/server';
-import { envServer } from '@/lib/env.server';
+import { env } from '@/lib/env.server';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  // Using env.NODE_ENV is not available; rely on build-time process substitution is banned, so expose a debug flag via TMDB tokens only.
-  return NextResponse.json({ ok: true, data: { has_V4: !!envServer.TMDB_V4_TOKEN } });
+  const runtime = (typeof (globalThis as any).EdgeRuntime !== 'undefined') ? 'edge' : 'node';
+  return NextResponse.json({
+    ok: true,
+    hasTMDBv4: !!env.TMDB_V4_TOKEN,
+    hasTMDBv3: !!env.TMDB_API_KEY,
+    runtime,
+  });
 }

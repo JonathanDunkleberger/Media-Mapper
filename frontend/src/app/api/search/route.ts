@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { tmdbJson } from '@/lib/tmdb';
+import { tmdbJson } from '@/lib/tmdb.server';
 import { igdb, IGDBGameRaw } from '@/lib/igdb';
 import { booksSearch, GoogleVolumeRaw } from '@/lib/books';
 import { mapMovies, mapTV, mapGamesIGDB, mapBooksGoogle, TMDBMovie, TMDBTV } from '@/lib/map';

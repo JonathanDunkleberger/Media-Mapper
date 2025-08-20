@@ -1,4 +1,5 @@
-import { tmdbJson, tmdbImage } from '@/lib/tmdb';
+import { tmdbJson } from '@/lib/tmdb.server';
+import { posterUrl as tmdbImage } from '@/lib/tmdb.public';
 import { createJsonRoute } from '@/lib/api/route-factory';
 
 // Simple set of country codes and coordinates
@@ -25,7 +26,7 @@ async function fetchTopMoviesByCountry(countryCode: string): Promise<MovieResult
       const id = typeof obj.id === 'number' ? obj.id : Math.floor(Math.random() * 1e9);
       const title = typeof obj.title === 'string' ? obj.title : 'Unknown';
       const posterPath = typeof obj.poster_path === 'string' ? obj.poster_path : null;
-      const poster = tmdbImage(posterPath, 'w200');
+  const poster = tmdbImage(posterPath || undefined, 'w342') || null;
       return { id, title, poster, country: countryCode, coords: COUNTRY_COORDS[countryCode] || null } as MovieResult;
     });
   } catch {

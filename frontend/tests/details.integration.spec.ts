@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { zEnrichedDetail } from '@/lib/schemas/details';
 
-vi.mock('@/lib/tmdb', () => ({
+vi.mock('@/lib/tmdb.server', () => ({
   tmdbJson: vi.fn(async (path: string) => {
     if (path.includes('recommendations')) {
       return { results: [{ id: 303, title: 'Rec Movie', poster_path: '/r1.jpg', release_date: '2024-01-01' }] };
@@ -35,7 +35,7 @@ vi.mock('@/lib/map', () => ({
 
 // Import the route after mocks
 import * as detailsRoute from '@/app/api/details/[type]/[id]/route';
-import { tmdbJson } from '@/lib/tmdb';
+import { tmdbJson } from '@/lib/tmdb.server';
 import { igdb } from '@/lib/igdb';
 import { booksGet } from '@/lib/books';
 

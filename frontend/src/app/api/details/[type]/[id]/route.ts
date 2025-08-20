@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { tmdbJson } from '@/lib/tmdb';
+import { tmdbJson } from '@/lib/tmdb.server';
 import { igdb, igdbCoverUrl, IGDBGameRaw } from '@/lib/igdb';
 import { booksGet } from '@/lib/books';
 import { mapGamesIGDB } from '@/lib/map';

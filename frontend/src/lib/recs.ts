@@ -1,5 +1,5 @@
 import type { MediaItem, MediaType } from './types';
-import { tmdbJson } from './tmdb';
+import { tmdb as tmdbJson } from './tmdb.server';
 import { igdb, IGDBGameRaw } from './igdb';
 import { booksGet, booksSimilar, GoogleVolumeRaw } from './books';
 import { mapGamesIGDB, mapBooksGoogle } from './map';

@@ -1,5 +1,5 @@
-// server-only removed for test compatibility (handled via env validation)
-import { envServer } from '@/lib/env-server';
+// IGDB server-side helper (secrets protected by env.server)
+import { env } from '@/lib/env.server';
 import { fetchJSON, HttpError } from './http';
 import { getIgdbToken } from './igdb-token';
 
@@ -8,12 +8,12 @@ import { getIgdbToken } from './igdb-token';
 export async function igdb<T = unknown>(endpoint: string, body: string): Promise<T[]> {
   const token = await getIgdbToken();
   if (!token) throw new Error('IGDB token missing');
-  if (!envServer.TWITCH_CLIENT_ID || !envServer.TWITCH_CLIENT_SECRET) {
+  if (!env.TWITCH_CLIENT_ID || !env.TWITCH_CLIENT_SECRET) {
     // Fail clearly (should be validated at process start, but guards here for tests)
     throw new Error('Twitch credentials missing');
   }
   const headers: Record<string, string> = {
-    'Client-ID': envServer.TWITCH_CLIENT_ID,
+  'Client-ID': env.TWITCH_CLIENT_ID,
     'Authorization': `Bearer ${token}`,
     'Accept': 'application/json'
   };
