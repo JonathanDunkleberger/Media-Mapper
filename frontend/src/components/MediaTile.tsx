@@ -20,7 +20,7 @@ export default function MediaTile({ item, showQuickFav = true }: { item: MediaIt
     >
       <div className="rounded-xl overflow-hidden bg-zinc-800/40 ring-1 ring-white/10">
         <SafeImage
-          src={item.posterUrl || '/placeholder-media.png'}
+          src={item.posterUrl || '/placeholder-poster.png'}
           alt={item.title || 'Untitled'}
           w={300}
           h={450}

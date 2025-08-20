@@ -13,8 +13,8 @@ export default function MediaRowCarousel({ title, items }: { title: string; item
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-xl font-semibold">{title}</h2>
         <div className="flex gap-2">
-          <button type="button" onClick={() => scrollBy(-page())} className="rounded-full bg-white/10 px-3 py-1 hover:bg-white/20">‹</button>
-          <button type="button" onClick={() => scrollBy(page())} className="rounded-full bg-white/10 px-3 py-1 hover:bg-white/20">›</button>
+          <button type="button" aria-label="Scroll left" onClick={() => scrollBy(-page())} className="rounded-full bg-white/10 w-8 h-8 flex items-center justify-center hover:bg-white/20">←</button>
+          <button type="button" aria-label="Scroll right" onClick={() => scrollBy(page())} className="rounded-full bg-white/10 w-8 h-8 flex items-center justify-center hover:bg-white/20">→</button>
         </div>
       </div>
       <div

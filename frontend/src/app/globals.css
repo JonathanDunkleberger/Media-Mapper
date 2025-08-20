@@ -22,9 +22,9 @@
 
 
 :root {
-  /* Base (light fallback) */
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Force dark theme defaults */
+  --background: var(--xprime-bg, #06030d);
+  --foreground: var(--xprime-text, #f5f3ff);
 
   /* XPrime Theme Tokens */
   --xprime-bg: #06030d;
@@ -64,12 +64,7 @@
 
 /* Removed experimental @theme block (not recognized by current toolchain). */
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: var(--xprime-bg);
-    --foreground: var(--xprime-text);
-  }
-}
+/* Removed prefers-color-scheme toggle to lock dark palette */
 
 body {
   background: var(--background);

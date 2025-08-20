@@ -23,8 +23,8 @@ export function SafeImage({
   className,
   priority,
   sizes,
-  fallbackSrc = '/img/placeholder.png',
-  blurDataURL = '/img/placeholder-blur.jpg'
+  fallbackSrc = '/placeholder-poster.png',
+  blurDataURL = '/placeholder-poster.png'
 }: SafeImageProps) {
   const [broken, setBroken] = useState(false);
   const resolved = useMemo(() => {

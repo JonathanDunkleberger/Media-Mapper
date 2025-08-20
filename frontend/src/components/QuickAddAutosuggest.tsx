@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import { useToggleFavorite } from '@/hooks/useFavorites';
 import { useToast } from '@/components/ui/ToastProvider';
 import Link from 'next/link';
@@ -31,11 +31,16 @@ export default function QuickAddAutosuggest() {
     abortRef.current = ac;
     const t = setTimeout(async () => {
       try {
-  const json = await fetchInternalAPI<{ items?: Item[] }>(apiUrl(`search?q=${encodeURIComponent(q)}`), { cache: 'no-store', signal: ac.signal });
-        setItems((json.items ?? []).slice(0, 10));
+        const json = await fetchInternalAPI<{ items?: Item[] }>(apiUrl(`search?q=${encodeURIComponent(q)}`), { cache: 'no-store', signal: ac.signal });
+        const next = (json.items ?? []).slice(0, 10);
+        setItems(next);
         setOpen(true);
         setCursor(0);
-      } catch { /* ignore */ }
+      } catch {
+        // Surface empty state instead of silently hiding
+        setItems([]);
+        setOpen(true);
+      }
     }, 200);
     return () => { clearTimeout(t); ac.abort(); };
   }, [q]);
@@ -66,8 +71,11 @@ export default function QuickAddAutosuggest() {
         className="w-full rounded bg-zinc-900 border border-white/10 px-3 py-2 outline-none focus:border-white/25"
   aria-autocomplete="list"
       />
-      {open && items.length > 0 && (
-        <div className="absolute z-50 mt-1 w-full rounded border border-white/10 bg-zinc-950/95 backdrop-blur">
+      {open && (
+        <div className="absolute z-50 mt-1 w-full rounded border border-white/10 bg-zinc-950/95 backdrop-blur max-h-96 overflow-auto">
+          {items.length === 0 && (
+            <div className="px-3 py-3 text-xs text-zinc-400">{q.trim() ? 'No results' : 'Type to search'}</div>
+          )}
           {items.map((it, i) => (
             <div
               key={`${it.type}:${it.id}`}
@@ -76,7 +84,7 @@ export default function QuickAddAutosuggest() {
               onMouseDown={e => { e.preventDefault(); commitAdd(it); }}
             >
               <div className="truncate">
-                <div className="text-sm">{it.title}</div>
+                <div className="text-sm text-white">{it.title}</div>
                 <div className="text-xs text-zinc-400">{it.sublabel}</div>
               </div>
               <Link
