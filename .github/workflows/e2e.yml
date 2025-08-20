@@ -1,0 +1,52 @@
+name: E2E Images
+
+on:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      BASE_URL:
+        description: 'Deployed URL to test (e.g. https://your-site.vercel.app)'
+        required: false
+  schedule:
+    - cron: '17 7 * * *'  # daily at 07:17 UTC
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    env:
+      BASE_URL: ${{ github.event.inputs.BASE_URL || secrets.E2E_BASE_URL }}
+      # Optionally narrow categories (comma list): CATS: movie,tv
+      # CATS: movie,tv,anime,game,book
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter frontend exec playwright install --with-deps
+
+      # API smoke first (fast)
+      - name: API popular smoke
+        working-directory: frontend
+        run: pnpm playwright test tests/e2e/api-popular.spec.ts
+
+      # Image render test
+      - name: Image grid test
+        working-directory: frontend
+        run: pnpm playwright test tests/e2e/images.spec.ts
+
+      - name: Upload artifacts (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-artifacts
+          path: |
+            frontend/playwright-report
+            frontend/test-results
