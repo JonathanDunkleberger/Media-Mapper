@@ -1,11 +1,12 @@
+import { env } from '@/lib/env.client';
 const RETRY_DELAY = 1000;
 const MAX_RETRIES = 3;
 
 export async function fetchWithRetry<T = unknown>(url: string, options: RequestInit = {}, retries = 0): Promise<T> {
   try {
     const baseHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
-    if (process.env.NEXT_PUBLIC_API_KEY) {
-      baseHeaders['Authorization'] = `Bearer ${process.env.NEXT_PUBLIC_API_KEY}`;
+    if (env.NEXT_PUBLIC_API_KEY) {
+      baseHeaders['Authorization'] = `Bearer ${env.NEXT_PUBLIC_API_KEY}`;
     }
     const mergedHeaders: HeadersInit = {
       ...(options.headers as Record<string, string> | undefined),

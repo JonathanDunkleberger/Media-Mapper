@@ -1,5 +1,4 @@
-// Prevent Next.js server-only behavior errors under Vitest by conditional dynamic import
-;(async () => { try { await import('server-only'); } catch { /* ignored in test */ }})();
+// server-only removed for test compatibility (handled via env validation)
 import { envServer } from '@/lib/env-server';
 import { fetchJSON, HttpError } from './http';
 import { getIgdbToken } from './igdb-token';
@@ -8,16 +7,21 @@ import { getIgdbToken } from './igdb-token';
 
 export async function igdb<T = unknown>(endpoint: string, body: string): Promise<T[]> {
   const token = await getIgdbToken();
-  const clientId = envServer.TWITCH_CLIENT_ID;
+  if (!token) throw new Error('IGDB token missing');
+  if (!envServer.TWITCH_CLIENT_ID || !envServer.TWITCH_CLIENT_SECRET) {
+    // Fail clearly (should be validated at process start, but guards here for tests)
+    throw new Error('Twitch credentials missing');
+  }
+  const headers: Record<string, string> = {
+    'Client-ID': envServer.TWITCH_CLIENT_ID,
+    'Authorization': `Bearer ${token}`,
+    'Accept': 'application/json'
+  };
   try {
     return await fetchJSON<T[]>(`https://api.igdb.com/v4/${endpoint}`, {
       method: 'POST',
-      headers: {
-        'Client-ID': clientId,
-        'Authorization': `Bearer ${token}`,
-        'Accept': 'application/json'
-      },
-      body
+      headers,
+      body,
     });
   } catch (e) {
     if (e instanceof HttpError) throw new Error(`IGDB ${endpoint} ${e.status}: ${e.body}`);

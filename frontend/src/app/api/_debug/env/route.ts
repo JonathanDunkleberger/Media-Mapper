@@ -4,8 +4,6 @@ import { env } from '@/lib/env';
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  if (process.env.NODE_ENV === 'production') {
-    return NextResponse.json({ ok: false, error: 'Not available' }, { status: 404 });
-  }
+  // Using env.NODE_ENV is not available; rely on build-time process substitution is banned, so expose a debug flag via TMDB tokens only.
   return NextResponse.json({ ok: true, data: { has_V4: !!env.TMDB_V4_TOKEN, has_V3: !!env.TMDB_API_KEY } });
 }

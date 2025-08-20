@@ -5,8 +5,8 @@ const CATS = (process.env.CATS?.split(',').map(s => s.trim()).filter(Boolean) ??
 
 test.describe('popular API ok', () => {
   for (const cat of CATS) {
-    test(`GET /api/popular/${cat} ok:true`, async ({ baseURL }: { baseURL: string }) => {
-      const ctx = await request.newContext({ baseURL });
+    test(`GET /api/popular/${cat} ok:true`, async ({ baseURL }) => {
+      const ctx = await request.newContext({ baseURL: baseURL! });
       const res = await ctx.get(`/api/popular/${cat}`, { params: { mode: 'popular', page: 1, take: 1 } });
       expect(res.ok()).toBeTruthy();
       const json: any = await res.json();

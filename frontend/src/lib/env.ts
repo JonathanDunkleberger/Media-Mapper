@@ -20,7 +20,7 @@ export const env = ServerEnvSchema.parse(process.env);
 export function getBaseUrl() {
   if (typeof window !== 'undefined') return '';
   if (env.VERCEL_URL) return `https://${env.VERCEL_URL}`;
-  return process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+  return ''; // server fallback uses relative '' when NEXT_PUBLIC_BASE_URL is absent
 }
 
 export const caps = (s?: string | null) => (s ?? '').replaceAll('_',' ').toUpperCase();

@@ -48,8 +48,9 @@ export async function computeRecommendations(
   const results: MediaItem[] = [];
 
   // Short-circuit in test environments with no network credentials
-  if (process.env.VITEST) { // test-only flag; keep direct (not part of runtime validation)
-    return favorites.slice(0, perType * 4); // deterministic simple echo
+  // Test heuristic: Vitest sets globalThis.__vitest_worker__ / VITEST env, avoid direct process.env
+  if (typeof globalThis !== 'undefined' && (globalThis as any).__vitest_worker__) {
+    return favorites.slice(0, perType * 4);
   }
 
   // movies/tv via TMDB “similar”

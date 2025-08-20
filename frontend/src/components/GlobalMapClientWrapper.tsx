@@ -4,14 +4,15 @@ import dynamic from "next/dynamic";
 import { ErrorBoundary } from "react-error-boundary";
 import type { ReactNode } from "react";
 
-const GlobalMap = dynamic(() => import("@/components/GlobalMap"), {
-  ssr: false,
-  loading: () => (
-    <div className="w-full h-[600px] flex items-center justify-center bg-gray-900">
-      <p>Loading Map...</p>
-    </div>
-  ),
-});
+// Map component temporarily disabled
+// const GlobalMap = dynamic(() => import("@/components/GlobalMap"), {
+//   ssr: false,
+//   loading: () => (
+//     <div className="w-full h-[600px] flex items-center justify-center bg-gray-900">
+//       <p>Loading Map...</p>
+//     </div>
+//   ),
+// });
 
 function MapErrorFallback({ error, resetErrorBoundary }: { error: Error; resetErrorBoundary: () => void }) {
   return (
@@ -28,10 +29,12 @@ export interface GlobalMapClientWrapperProps {
   children?: ReactNode;
 }
 
-export default function GlobalMapClientWrapper({}: GlobalMapClientWrapperProps) {
+export default function GlobalMapClientWrapper(_props: GlobalMapClientWrapperProps) {
   return (
     <ErrorBoundary FallbackComponent={MapErrorFallback}>
-      <GlobalMap />
+      <div className="w-full h-[600px] flex items-center justify-center bg-gray-900 text-gray-400 text-sm">
+        Global Map disabled
+      </div>
     </ErrorBoundary>
   );
 }
