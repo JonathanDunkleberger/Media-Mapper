@@ -4,6 +4,7 @@ import { MapContainer, TileLayer, Marker, Tooltip } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { fetchInternalAPI } from '@/lib/api';
+import { apiUrl } from '@/lib/api-base';
 
 // No backendBase needed; use /api endpoints directly
 
@@ -27,7 +28,7 @@ export default function GlobalMap() {
       setLoading(true);
       setError(null);
       try {
-  const data = await fetchInternalAPI<{ movies?: MapMovie[] }>(`/api/global-map-movies`, { signal: controller.signal });
+  const data = await fetchInternalAPI<{ movies?: MapMovie[] }>(apiUrl('global-map-movies'), { signal: controller.signal });
         setMovies(Array.isArray(data.movies) ? data.movies : []);
       } catch (e) {
         if (e instanceof Error) {

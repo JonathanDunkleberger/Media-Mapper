@@ -5,6 +5,7 @@ import { cookies } from 'next/headers';
 import FavoritesSidebar from '@/components/FavoritesSidebar';
 import FavoritesDrawer from '@/components/FavoritesDrawer';
 import { fetchInternalAPI } from '@/lib/api';
+import { apiUrl } from '@/lib/api-base';
 
 async function fetchRow(path: string, revalidate = 3600) {
   try {
@@ -18,19 +19,20 @@ async function fetchRow(path: string, revalidate = 3600) {
 export default async function Home() {
   const cookieStore = await cookies();
   const recMode = cookieStore.get('mm_recommend')?.value === '1';
+  // Use logical paths via apiUrl helper to avoid raw "/api/" literals.
   const [moviesRaw, tvRaw, gamesRaw, booksRaw] = await Promise.all(
     recMode
       ? [
-          fetchRow('/api/recommend?cat=movie', 0),
-          fetchRow('/api/recommend?cat=tv', 0),
-          fetchRow('/api/recommend?cat=game', 0),
-          fetchRow('/api/recommend?cat=book', 0),
+          fetchRow(apiUrl('recommend?cat=movie'), 0),
+          fetchRow(apiUrl('recommend?cat=tv'), 0),
+          fetchRow(apiUrl('recommend?cat=game'), 0),
+          fetchRow(apiUrl('recommend?cat=book'), 0),
         ]
       : [
-          fetchRow('/api/popular/movies'),
-          fetchRow('/api/popular/tv'),
-          fetchRow('/api/popular/games'),
-          fetchRow('/api/popular/books'),
+          fetchRow(apiUrl('popular/movies')),
+          fetchRow(apiUrl('popular/tv')),
+          fetchRow(apiUrl('popular/games')),
+          fetchRow(apiUrl('popular/books')),
         ]
   );
 

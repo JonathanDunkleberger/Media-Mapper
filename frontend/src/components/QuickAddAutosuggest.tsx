@@ -4,6 +4,7 @@ import { useToggleFavorite } from '@/hooks/useFavorites';
 import { useToast } from '@/components/ui/ToastProvider';
 import Link from 'next/link';
 import { fetchInternalAPI } from '@/lib/api';
+import { apiUrl } from '@/lib/api-base';
 
 type Item = {
   id: string | number;
@@ -30,7 +31,7 @@ export default function QuickAddAutosuggest() {
     abortRef.current = ac;
     const t = setTimeout(async () => {
       try {
-  const json = await fetchInternalAPI<{ items?: Item[] }>(`/api/search?q=${encodeURIComponent(q)}`, { cache: 'no-store', signal: ac.signal });
+  const json = await fetchInternalAPI<{ items?: Item[] }>(apiUrl(`search?q=${encodeURIComponent(q)}`), { cache: 'no-store', signal: ac.signal });
         setItems((json.items ?? []).slice(0, 10));
         setOpen(true);
         setCursor(0);

@@ -1,4 +1,4 @@
-// Unified enriched media detail schema used by /api/details
+// Unified enriched media detail schema used by internal details API
 import { MediaType } from './types';
 
 export interface BaseRecommendationSummary {

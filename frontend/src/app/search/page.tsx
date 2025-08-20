@@ -5,6 +5,7 @@ import { QueryClient, dehydrate, HydrationBoundary } from '@tanstack/react-query
 import { keys } from '@/lib/query-keys';
 import type { MediaItem } from '@/lib/types';
 import { getRequestBaseUrl } from '@/lib/http/base-url';
+import { apiUrl } from '@/lib/api-base';
 import { mustOk } from '@/lib/http/mustOk';
 
 interface SearchParams { [key: string]: string | string[] | undefined }
@@ -20,7 +21,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
   const qc = new QueryClient();
 
   if (q) {
-    const url = new URL(`${base}/api/search`);
+  const url = new URL(`${base}${apiUrl('search')}`);
     url.searchParams.set('q', q);
     if (mode) url.searchParams.set('cat', mode);
     url.searchParams.set('page', '1');

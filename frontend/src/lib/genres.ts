@@ -1,4 +1,4 @@
-import 'server-only';
+// server-only removed for test compatibility
 import { tmdbJson } from './tmdb';
 import { cache } from 'react';
 

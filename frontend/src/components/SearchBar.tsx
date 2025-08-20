@@ -3,6 +3,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { SafeImage } from './SafeImage';
 import algoliasearch from 'algoliasearch/lite';
 import { fetchInternalAPI } from '@/lib/api';
+import { apiUrl } from '@/lib/api-base';
 
 type AlgoliaSearchResponse<T> = { hits: T[]; [key: string]: unknown };
 import type { KnownMedia } from '../types/media';
@@ -136,8 +137,8 @@ export function SearchBar({ onSelect }: SearchBarProps) {
       const pAlgolia = algoliaIndex.search<KnownMedia>(query, { hitsPerPage: 20 })
         .then((r: AlgoliaSearchResponse<KnownMedia>) => r.hits)
         .catch((e: unknown) => { throw new Error('Algolia: ' + (e instanceof Error ? e.message : 'failed')); });
-      const backendUrl = `/api/search?q=${encodeURIComponent(query)}&type=all`;
-      const pBackend = fetchInternalAPI<KnownMedia[]>(backendUrl, { signal: backendController.signal })
+  const backendUrl = apiUrl(`search?q=${encodeURIComponent(query)}&type=all`);
+  const pBackend = fetchInternalAPI<KnownMedia[]>(backendUrl, { signal: backendController.signal })
         .catch((e: unknown) => { throw new Error('Live: ' + (e instanceof Error ? e.message : 'failed')); });
 
       Promise.allSettled([pBackend, pAlgolia]).then(settled => {

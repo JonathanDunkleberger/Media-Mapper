@@ -2,6 +2,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { supabaseClient } from '@/lib/supabase';
 import { fetchInternalAPI } from '@/lib/api';
+import { apiUrl } from '@/lib/api-base';
 
 type AuthResult = {
   data: { user: { id: string; email?: string } | null; session: { user: { id: string; email?: string } } | null };
@@ -38,7 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const id = fav.external_id || fav.id || fav.key;
         if (!id) continue;
   // Use /api endpoints directly
-        await fetchInternalAPI(`/api/favorites`, {
+  await fetchInternalAPI(apiUrl('favorites'), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

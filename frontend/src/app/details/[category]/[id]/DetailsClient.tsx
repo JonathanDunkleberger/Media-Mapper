@@ -2,27 +2,17 @@
 import { useQuery } from '@tanstack/react-query';
 import Image from 'next/image';
 import { keys } from '@/lib/query-keys';
-import type { MediaItem } from '@/lib/types';
+import { apiUrl, canonicalCategory } from '@/lib/api-base';
 import type { MediaDetails } from './page';
 
 export default function DetailsClient({ category, id }: { category: string; id: number }) {
   const detail = useQuery<MediaDetails>({
     queryKey: keys.details(category, id),
     queryFn: async () => {
-      const r = await fetch(`/api/details/${category}/${id}`);
+  const r = await fetch(apiUrl(`details/${canonicalCategory(category)}/${id}`));
       const j = await r.json();
       if (!j?.ok) throw new Error(j?.error || 'Failed');
       return j.data as MediaDetails;
-    }
-  });
-
-  const recs = useQuery<MediaItem[]>({
-    queryKey: keys.recommend(category, id),
-    queryFn: async () => {
-      const r = await fetch(`/api/recommend/${category}/${id}?page=1&take=20`);
-      const j = await r.json();
-      if (!j?.ok) throw new Error(j?.error || 'Failed');
-      return j.data as MediaItem[];
     }
   });
 
@@ -40,11 +30,11 @@ export default function DetailsClient({ category, id }: { category: string; id: 
         </div>
       </header>
       <section className="max-w-6xl mx-auto px-4 py-10">
-        {recs.data && recs.data.length > 0 && (
+    {item.recommendations && item.recommendations.length > 0 && (
           <div>
             <h2 className="font-semibold mb-3">Recommendations</h2>
             <ul className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
-              {recs.data.map(r => (
+      {item.recommendations.map(r => (
                 <li key={`${r.type}:${r.id}`} className="text-xs">
                   {r.posterUrl && <Image src={r.posterUrl} alt={r.title} width={120} height={180} className="rounded mb-1 object-cover w-full h-auto" />}
                   <div className="line-clamp-2 leading-tight">{r.title}</div>

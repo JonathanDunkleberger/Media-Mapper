@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 // Use internal absolute URL helper instead of axios + relative path
 import { fetchInternalAPI } from '@/lib/api';
+import { apiUrl } from '@/lib/api-base';
 import { MediaCard } from './MediaCard';
 import type { KnownMedia } from '../types/media';
 import { getId } from '../utils/mediaHelpers';
@@ -31,7 +32,7 @@ export function MediaCarousel({ title, mediaType, items: itemsProp, sectionId, e
       setInternalLoading(true);
       setError(null);
       try {
-        const response = await fetchInternalAPI<{ items?: KnownMedia[]; results?: KnownMedia[] }>(`/api/popular/${mediaType}`, { cache: 'no-store', signal: controller.signal });
+  const response = await fetchInternalAPI<{ items?: KnownMedia[]; results?: KnownMedia[] }>(apiUrl(`popular/${mediaType}`), { cache: 'no-store', signal: controller.signal });
         const list = (response.items || response.results || []) as KnownMedia[];
         setItems(list);
       } catch (err: unknown) {

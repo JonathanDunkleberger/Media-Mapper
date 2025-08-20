@@ -14,6 +14,10 @@ export function middleware(request: NextRequest) {
     },
   });
 
+  // Diagnostics header for tracing
+  if (!response.headers.get('x-request-id')) {
+    response.headers.set('x-request-id', crypto.randomUUID());
+  }
   // Set CORS headers
   response.headers.set('Access-Control-Allow-Origin', '*'); // Or your specific domain
   response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -23,5 +27,6 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: '/api/:path*',
+  // Apply middleware to all paths except those starting with /api/
+  matcher: ['/((?!api/).*)'],
 };

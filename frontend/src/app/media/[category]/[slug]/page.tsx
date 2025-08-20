@@ -3,16 +3,17 @@ import type { KnownMedia } from '../../../../types/media';
 import { getImageUrl, getTitle, getField, normalizeMediaData } from '../../../../utils/mediaHelpers';
 import { isMovie, isBook, isGame } from '../../../../types/media';
 import { fetchInternalAPI } from '@/lib/api';
+import { apiUrl } from '@/lib/api-base';
 import Image from 'next/image';
 
 export default async function MediaDetailPage(props: unknown) {
   const p = props as { params?: { category: string; slug: string } } | undefined;
   const { category, slug } = (p?.params ?? {}) as { category: string; slug: string };
-  // TODO: Replace with actual API endpoints
-  // Use /api endpoints directly
-  const mediaRaw = await fetchInternalAPI<KnownMedia>(`/api/media/${category}/${slug}`);
+  // TODO: Replace with actual internal item endpoint via apiUrl helper when implemented
+  const mediaRaw = await fetchInternalAPI<KnownMedia>(apiUrl(`item/${category}/${slug}`));
   const media = normalizeMediaData(mediaRaw);
-  const similarRaw = await fetchInternalAPI<KnownMedia[]>(`/api/media/${category}/${slug}/similar`);
+  // Similar list not currently provided by item endpoint; placeholder empty list until implemented or replaced.
+  const similarRaw: KnownMedia[] = [];
   const similar = similarRaw.map(item => normalizeMediaData(item));
 
   let imageUrl = '/placeholder-media.png';

@@ -9,7 +9,7 @@ const favKey = (f: Pick<Favorite, 'id' | 'category'>) => `${f.category}:${f.id}`
 export function useFavorites() {
   return useQuery<Favorite[]>({
     queryKey: keys.favorites(),
-    queryFn: () => qGet<Favorite[]>('/api/favorites'),
+  queryFn: () => qGet<Favorite[]>('favorites'),
     staleTime: 10 * 60_000,
     refetchOnWindowFocus: false,
   });
@@ -25,7 +25,7 @@ export function useToggleFavorite() {
 
   const add = useMutation({
     mutationKey: ['fav','add'],
-    mutationFn: (p: Favorite) => qPost<{ id: number }>('/api/favorites', p),
+  mutationFn: (p: Favorite) => qPost<{ id: number }>('favorites', p),
     onMutate: async (p: Favorite) => {
       await qc.cancelQueries({ queryKey: keys.favorites() });
       const prev = qc.getQueryData<Favorite[]>(keys.favorites()) ?? [];
@@ -40,7 +40,7 @@ export function useToggleFavorite() {
 
   const remove = useMutation({
     mutationKey: ['fav','remove'],
-    mutationFn: (id: number) => qDelete<{ id: number }>('/api/favorites', { id }),
+  mutationFn: (id: number) => qDelete<{ id: number }>('favorites', { id }),
     onMutate: async (id: number) => {
       await qc.cancelQueries({ queryKey: keys.favorites() });
       const prev = qc.getQueryData<Favorite[]>(keys.favorites()) ?? [];

@@ -1,4 +1,5 @@
 import type { Api } from './types';
+import { apiUrl } from '@/lib/api-base';
 
 type Json = Record<string, unknown> | unknown[] | string | number | boolean | null;
 export type ApiQuery = Record<string, string | number | boolean | undefined>;
@@ -23,7 +24,9 @@ async function handle<T>(res: Response): Promise<Api<T>> {
 
 export async function apiGet<T>(path: string, opts: Opts = {}): Promise<Api<T>> {
   const { query, ...init } = opts;
-  const url = withQuery(path, query);
+  // Allow callers to pass logical paths like 'popular/movies' or with leading '/api/'
+  const logical = path.replace(/^\/*api\//, '').replace(/^\//, '');
+  const url = withQuery(apiUrl(logical), query);
   try {
     const res = await fetch(url, {
       ...init,
@@ -38,7 +41,8 @@ export async function apiGet<T>(path: string, opts: Opts = {}): Promise<Api<T>> 
 
 export async function apiPost<T>(path: string, body: Json, opts: Opts = {}): Promise<Api<T>> {
   const { query, ...init } = opts;
-  const url = withQuery(path, query);
+  const logical = path.replace(/^\/*api\//, '').replace(/^\//, '');
+  const url = withQuery(apiUrl(logical), query);
   try {
     const res = await fetch(url, {
       ...init,
@@ -54,7 +58,8 @@ export async function apiPost<T>(path: string, body: Json, opts: Opts = {}): Pro
 
 export async function apiDelete<T>(path: string, opts: Opts = {}): Promise<Api<T>> {
   const { query, ...init } = opts;
-  const url = withQuery(path, query);
+  const logical = path.replace(/^\/*api\//, '').replace(/^\//, '');
+  const url = withQuery(apiUrl(logical), query);
   try {
     const res = await fetch(url, {
       ...init,

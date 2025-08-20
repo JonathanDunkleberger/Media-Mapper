@@ -5,6 +5,7 @@ import { keys } from '@/lib/query-keys';
 import type { MediaItem } from '@/lib/types';
 import { getRequestBaseUrl } from '@/lib/http/base-url';
 import { mustOk } from '@/lib/http/mustOk';
+import { apiUrl, canonicalCategory } from '@/lib/api-base';
 import DetailsClient from './DetailsClient';
 
 // Minimal detail shape (extend if you have MediaDetails type elsewhere)
@@ -18,7 +19,7 @@ interface DetailParams { category: string; id: string }
 export default async function Page({ params }: { params: Promise<DetailParams> }) {
   const resolved = await params;
   const base = await getRequestBaseUrl();
-  const cat = resolved.category;
+  const cat = canonicalCategory(resolved.category);
   const idNum = Number(resolved.id);
 
   if (!resolved.id || Number.isNaN(idNum) || idNum <= 0) {
@@ -34,13 +35,10 @@ export default async function Page({ params }: { params: Promise<DetailParams> }
 
   await qc.prefetchQuery({
     queryKey: keys.details(cat, idNum),
-    queryFn: async () => mustOk<MediaDetails>(await fetch(`${base}/api/details/${cat}/${idNum}`, { cache: 'no-store' })),
+  queryFn: async () => mustOk<MediaDetails>(await fetch(`${base}${apiUrl(`details/${cat}/${idNum}`)}`, { cache: 'no-store' })),
   });
 
-  await qc.prefetchQuery({
-    queryKey: keys.recommend(cat, idNum),
-    queryFn: async () => mustOk<MediaItem[]>(await fetch(`${base}/api/recommend/${cat}/${idNum}?page=1&take=20`, { cache: 'no-store' })),
-  });
+  // Recommendations are included in the details endpoint; no separate recommend prefetch.
 
   return (
     <HydrationBoundary state={dehydrate(qc)}>

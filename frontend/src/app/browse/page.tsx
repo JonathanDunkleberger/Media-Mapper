@@ -6,12 +6,13 @@ import { headers } from 'next/headers';
 import { keys } from '@/lib/query-keys';
 import type { MediaItem } from '@/types/media';
 import { mustOk } from '@/lib/http/mustOk';
+import { apiUrl, canonicalCategory } from '@/lib/api-base';
 
 interface BrowseSearchParams { [key: string]: string | string[] | undefined }
 
 export default async function Page({ searchParams }: { searchParams: Promise<BrowseSearchParams> }) {
   const resolved = await searchParams;
-  const cat = (Array.isArray(resolved.cat) ? resolved.cat[0] : resolved.cat) ?? 'movie';
+  const cat = canonicalCategory((Array.isArray(resolved.cat) ? resolved.cat[0] : resolved.cat) ?? 'movie');
   const mode = (Array.isArray(resolved.mode) ? resolved.mode[0] : resolved.mode) ?? 'popular';
 
   const h = await headers();
@@ -22,7 +23,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Bro
   const qc = new QueryClient();
   await qc.prefetchQuery({
     queryKey: keys.popular(cat, mode),
-    queryFn: async () => mustOk<MediaItem[]>(await fetch(`${base}/api/popular/${cat}?mode=${mode}&page=1&take=60`, { cache: 'no-store' })),
+  queryFn: async () => mustOk<MediaItem[]>(await fetch(`${base}${apiUrl(`popular/${cat}`)}?mode=${mode}&page=1&take=60`, { cache: 'no-store' })),
   });
 
   return (

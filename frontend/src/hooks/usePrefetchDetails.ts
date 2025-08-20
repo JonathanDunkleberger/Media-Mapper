@@ -9,7 +9,7 @@ export function usePrefetchDetails(cat: string) {
   return (id: number | string) => {
     void qc.prefetchQuery({
       queryKey: keys.details(cat, Number(id)),
-      queryFn: () => qGet<EnrichedMediaDetail>(`/api/details/${cat}/${id}`),
+  queryFn: () => qGet<EnrichedMediaDetail>(`details/${cat}/${id}`),
       staleTime: 5 * 60_000,
     });
   };

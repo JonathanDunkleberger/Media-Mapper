@@ -34,7 +34,8 @@ const Params = z.object({ type: z.enum(['movie','tv','game','book']), id: z.stri
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const GET = async (_req: Request, ctx: any) => {
   const { type, id } = Params.parse(ctx.params);
-  if (!id || Number.isNaN(Number(id))) {
+  // Numeric enforcement only for movie/tv/game; books can have string IDs
+  if (!id || ((type === 'movie' || type === 'tv' || type === 'game') && Number.isNaN(Number(id)))) {
     return NextResponse.json({ ok: false, error: 'Invalid ID parameter' }, { status: 400 });
   }
   try {
@@ -77,7 +78,7 @@ export const GET = async (_req: Request, ctx: any) => {
         });
       } catch {}
   const parsed = zEnrichedDetail.parse(detail);
-  return NextResponse.json({ ok: true, data: parsed }, { headers: new Headers({ 'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=600' }) });
+  return NextResponse.json({ ok: true, item: parsed }, { headers: new Headers({ 'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=600' }) });
     }
 
     if (type === 'game') {
@@ -110,7 +111,7 @@ export const GET = async (_req: Request, ctx: any) => {
         } catch {}
       }
   const parsed = zEnrichedDetail.parse(detail);
-  return NextResponse.json({ ok: true, data: parsed }, { headers: new Headers({ 'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=600' }) });
+  return NextResponse.json({ ok: true, item: parsed }, { headers: new Headers({ 'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=600' }) });
     }
 
     if (type === 'book') {
@@ -144,7 +145,7 @@ export const GET = async (_req: Request, ctx: any) => {
         rating: [],
       };
   const parsed = zEnrichedDetail.parse(detail);
-  return NextResponse.json({ ok: true, data: parsed }, { headers: new Headers({ 'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=600' }) });
+  return NextResponse.json({ ok: true, item: parsed }, { headers: new Headers({ 'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=600' }) });
     }
     return NextResponse.json({ ok: false, error: 'Unsupported type' }, { status: 400 });
   } catch (e) {

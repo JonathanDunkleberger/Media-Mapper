@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useFavorites } from '@/hooks/useFavorites';
 import { fetchInternalAPI } from '@/lib/api';
+import { apiUrl } from '@/lib/api-base';
 
 function setCookie(name: string, value: string, maxAgeSeconds: number) {
   document.cookie = `${name}=${value}; path=/; max-age=${maxAgeSeconds}`;
@@ -16,7 +17,7 @@ export function RecommendButton() {
     if (!favs.length) return;
     setBusy(true);
     try {
-      await fetchInternalAPI(`/api/recommend`, {
+  await fetchInternalAPI(apiUrl('recommend'), {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ favorites: favs }),

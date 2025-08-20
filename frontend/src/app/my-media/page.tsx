@@ -8,6 +8,7 @@ import { InLoveList } from '../../components/InLoveList';
 // import { RecommendationsGrid } from '../../components/RecommendationsGrid';
 import type { KnownMedia } from '../../types/media';
 import { fetchInternalAPI } from '@/lib/api';
+import { apiUrl } from '@/lib/api-base';
 
 export default function MyMediaPage() {
   const { user } = useAuth();
@@ -34,7 +35,7 @@ export default function MyMediaPage() {
       // Authenticated user logic
       try {
         const token = localStorage.getItem('sb-access-token') || '';
-        const data = await fetchInternalAPI<{ favorites?: { media: KnownMedia }[] }>(`/api/favorites`, {
+  const data = await fetchInternalAPI<{ favorites?: { media: KnownMedia }[] }>(apiUrl('favorites'), {
           headers: { 'Authorization': `Bearer ${token}` },
           signal: controller.signal
         });
@@ -63,7 +64,7 @@ export default function MyMediaPage() {
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchInternalAPI<{ recommendations?: unknown[] }>(`/api/recommend`, {
+  const data = await fetchInternalAPI<{ recommendations?: unknown[] }>(apiUrl('recommend'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ favorites }),
