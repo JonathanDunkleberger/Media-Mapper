@@ -5,6 +5,7 @@ import { useToast } from '@/components/ui/ToastProvider';
 import Link from 'next/link';
 import { fetchInternalAPI } from '@/lib/api';
 import { apiUrl } from '@/lib/api-base';
+import { TileImage } from './TileImage';
 
 type Item = {
   id: string | number;
@@ -71,11 +72,14 @@ export default function QuickAddAutosuggest() {
           {items.map((it, i) => (
             <div
               key={`${it.type}:${it.id}`}
-              className={`flex items-center justify-between gap-2 px-3 py-2 cursor-pointer ${i === cursor ? 'bg-white/10' : ''}`}
+              className={`flex items-center gap-3 px-3 py-2 cursor-pointer ${i === cursor ? 'bg-white/10' : ''}`}
               onMouseEnter={() => setCursor(i)}
               onMouseDown={e => { e.preventDefault(); commitAdd(it); }}
             >
-              <div className="truncate">
+              <div className="w-10 h-auto flex-shrink-0">
+                <TileImage src={it.posterUrl} alt={it.title} />
+              </div>
+              <div className="truncate flex-1">
                 <div className="text-sm">{it.title}</div>
                 <div className="text-xs text-zinc-400">{it.sublabel}</div>
               </div>

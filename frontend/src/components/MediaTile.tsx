@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { SafeImage } from './SafeImage';
+import { TileImage } from './TileImage';
 import type { MediaItem } from '@/lib/types';
 import { useFavorites, useToggleFavorite } from '@/hooks/useFavorites';
 import { usePrefetchDetails } from '@/hooks/usePrefetchDetails';
@@ -19,11 +19,9 @@ export default function MediaTile({ item, showQuickFav = true }: { item: MediaIt
       onMouseEnter={() => prefetch(Number(item.id))}
     >
       <div className="rounded-xl overflow-hidden bg-zinc-800/40 ring-1 ring-white/10">
-        <SafeImage
-          src={item.posterUrl || '/placeholder-media.png'}
+        <TileImage
+          src={item.posterUrl}
           alt={item.title || 'Untitled'}
-          w={300}
-          h={450}
           className="h-[270px] w-[180px] object-cover transition-transform duration-200 group-hover:scale-[1.03]"
         />
       </div>
