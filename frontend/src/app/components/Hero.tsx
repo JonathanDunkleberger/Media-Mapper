@@ -52,7 +52,7 @@ export function Hero({ featuredItem }: HeroProps) {
               Add to Library
             </button>
             <Link
-              href={`/details/${featuredItem.category}/${featuredItem.id}`}
+              href={`/detail/${featuredItem.category}/${featuredItem.id}`}
               className="flex items-center gap-2 rounded-lg bg-white/20 px-6 py-3 font-semibold transition hover:bg-white/30"
             >
               <Info size={20} />

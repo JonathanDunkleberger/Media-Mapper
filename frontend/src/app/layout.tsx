@@ -27,11 +27,21 @@ export default function RootLayout({
         <AuthProvider>
           <ToastProvider>
           <header className="sticky top-0 z-30 bg-zinc-950/80 backdrop-blur border-b border-white/10">
-            <div className="mx-auto max-w-7xl px-6 py-3 flex items-center gap-4">
+            <div className="mx-auto max-w-7xl px-6 py-3 flex items-center gap-6">
               <Link href="/" className="text-lg font-bold">Media <span className="text-indigo-400">Mapper</span></Link>
+              
+              {/* Navigation Links */}
+              <nav className="flex items-center gap-4">
+                <Link href="/" className="text-sm text-zinc-300 hover:text-white">Home</Link>
+                <Link href="/browse" className="text-sm text-zinc-300 hover:text-white">Browse</Link>
+                <Link href="/my-media" className="text-sm text-zinc-300 hover:text-white">My Media</Link>
+              </nav>
+              
+              {/* Global Search Bar */}
               <div className="flex items-center gap-3 flex-1 max-w-xl">
                 <QuickAddAutosuggest />
               </div>
+              
               <HeaderActions />
             </div>
           </header>

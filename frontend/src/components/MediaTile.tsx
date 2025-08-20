@@ -14,7 +14,7 @@ export default function MediaTile({ item, showQuickFav = true }: { item: MediaIt
   const isFav = !!favorites?.some(f => String(f.id) === String(item.id));
   return (
     <Link
-      href={`/media/${item.type}/${item.id}`}
+      href={`/detail/${item.type}/${item.id}`}
       className="group relative block"
       onMouseEnter={() => prefetch(Number(item.id))}
     >

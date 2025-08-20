@@ -80,7 +80,7 @@ export default function QuickAddAutosuggest() {
                 <div className="text-xs text-zinc-400">{it.sublabel}</div>
               </div>
               <Link
-                href={`/media/${it.type}/${it.id}`}
+                href={`/detail/${it.type}/${it.id}`}
                 className="text-xs text-zinc-300 hover:text-white px-2 py-1 rounded bg-white/5"
                 onMouseDown={e => e.stopPropagation()}
                 title="Open detail"

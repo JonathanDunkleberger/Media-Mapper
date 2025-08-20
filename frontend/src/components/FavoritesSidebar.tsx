@@ -82,7 +82,7 @@ export default function FavoritesSidebar({
                       <div className="truncate text-[10px] text-zinc-400">{it.sublabel}</div>
                     </div>
                     <div className="flex items-center gap-1">
-                      <Link href={`/media/${it.type}/${it.id}`} className="text-[10px] rounded bg-white/10 px-2 py-1 hover:bg-white/20" title="Open detail">Open</Link>
+                      <Link href={`/detail/${it.type}/${it.id}`} className="text-[10px] rounded bg-white/10 px-2 py-1 hover:bg-white/20" title="Open detail">Open</Link>
                       <button onClick={() => remove.mutate(Number(it.id))} className="p-1 rounded hover:bg-white/10" aria-label={`Remove ${it.title}`} title="Remove"><XMarkIcon className="w-3.5 h-3.5" /></button>
                     </div>
                   </div>
@@ -103,7 +103,7 @@ export default function FavoritesSidebar({
                   <div className="truncate text-[10px] text-zinc-400">{it.sublabel}</div>
                 </div>
                 <div className="flex items-center gap-1">
-                  <Link href={`/media/${it.type}/${it.id}`} className="text-[10px] rounded bg-white/10 px-2 py-1 hover:bg-white/20">Open</Link>
+                  <Link href={`/detail/${it.type}/${it.id}`} className="text-[10px] rounded bg-white/10 px-2 py-1 hover:bg-white/20">Open</Link>
                   <button onClick={() => remove.mutate(Number(it.id))} className="p-1 rounded hover:bg-white/10" aria-label={`Remove ${it.title}`}><XMarkIcon className="w-3.5 h-3.5" /></button>
                 </div>
               </div>

@@ -4,7 +4,6 @@ import { usePathname } from 'next/navigation';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useFavoritesDrawer } from '@/components/FavoritesDrawer';
 import { RecommendButton, ShowTrendingButton } from '@/components/RecommendControls';
-import BrowseTrigger from '@/components/BrowseTrigger';
 
 export default function HeaderActions() {
   const { data: favs = [] } = useFavorites();
@@ -15,9 +14,6 @@ export default function HeaderActions() {
 
   return (
     <div className="flex items-center gap-2 ml-auto">
-      <BrowseTrigger />
-      {/* Search always available */}
-      <Link href="/search" aria-label="Explore search" className="p-2 rounded hover:bg-white/10 text-zinc-300 hover:text-white">🔍</Link>
       {/* Mobile heart toggler only on Home */}
       {onHome && (
         <button
@@ -36,7 +32,6 @@ export default function HeaderActions() {
       )}
       <RecommendButton />
       <ShowTrendingButton />
-      <Link href="/profile" className="text-sm text-zinc-300 hover:text-white">My Media</Link>
     </div>
   );
 }
