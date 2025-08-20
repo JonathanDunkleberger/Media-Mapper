@@ -6,9 +6,8 @@ function buildAuth(): Record<string, string> {
   return {};
 }
 
-export async function tmdb<T>(path: string, init?: RequestInit) {
+export async function tmdb<T>(path: string, init?: RequestInit & { timeoutMs?: number }) {
   const initHeaders: Record<string, string> = {};
-  // Normalize any provided headers to a plain object
   if (init?.headers) {
     if (init.headers instanceof Headers) {
       init.headers.forEach((v, k) => { initHeaders[k] = v; });
@@ -19,13 +18,32 @@ export async function tmdb<T>(path: string, init?: RequestInit) {
     }
   }
   const headers: Record<string, string> = { Accept: 'application/json', ...initHeaders, ...buildAuth() };
-  const res = await fetch(`https://api.themoviedb.org/3${path}`, {
-    ...init,
-    headers,
-    cache: 'no-store',
-  });
-  if (!res.ok) throw new Error(`TMDB ${res.status}`);
-  return res.json() as Promise<T>;
+  const timeoutMs = init?.timeoutMs ?? 5000;
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeoutMs);
+  const started = Date.now();
+  try {
+    const res = await fetch(`https://api.themoviedb.org/3${path}`, {
+      ...init,
+      headers,
+      cache: 'no-store',
+      signal: controller.signal,
+    });
+    clearTimeout(id);
+    const elapsed = Date.now() - started;
+    // if (elapsed > 2000) {
+    //   console.warn(`[tmdb] Slow request (${elapsed}ms): ${path}`);
+    // }
+    if (!res.ok) throw new Error(`TMDB ${res.status}`);
+    return res.json() as Promise<T>;
+  } catch (err) {
+    if ((err as any).name === 'AbortError') {
+      // console.error(`[tmdb] Timeout after ${timeoutMs}ms: ${path}`);
+      throw new Error(`TMDB timeout after ${timeoutMs}ms: ${path}`);
+    }
+    // console.error(`[tmdb] Error: ${path}`, err);
+    throw err;
+  }
 }
 
 // Backwards-compatible helper matching previous tmdbJson signature that accepted searchParams map.

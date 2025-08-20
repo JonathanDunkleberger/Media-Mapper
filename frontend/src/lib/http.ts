@@ -15,10 +15,15 @@ export async function fetchJSON<T>(
 ): Promise<T> {
   const { tries = 2, backoffMs = 350 } = retry;
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 12_000);
-
+  const timeoutMs = 5000;
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  const started = Date.now();
   try {
     const res = await fetch(input, { ...init, signal: controller.signal });
+    const elapsed = Date.now() - started;
+    // if (elapsed > 2000) {
+    //   console.warn(`[fetchJSON] Slow request (${elapsed}ms): ${typeof input === 'string' ? input : String((input as any).url ?? input)}`);
+    // }
     if (!res.ok) {
       const body = await res.text().catch(() => '');
       if (res.status >= 500 && tries > 0) {
@@ -28,10 +33,6 @@ export async function fetchJSON<T>(
       throw new HttpError(res.status, body.slice(0, 500), typeof input === 'string' ? input : String((input as any).url ?? input));
     }
     return (await res.json()) as T;
-  } catch (err) {
-    // eslint-disable-next-line no-console
-    console.error('[fetchJSON]', err);
-    throw err;
   } finally {
     clearTimeout(timer);
   }

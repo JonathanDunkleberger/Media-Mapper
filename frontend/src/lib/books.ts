@@ -18,9 +18,18 @@ export interface GoogleVolumeRaw {
 }
 
 async function gjson<T>(url: string): Promise<T> {
+  const started = Date.now();
   try {
-    return await fetchJSON<T>(url, { next: { revalidate: 3600 } });
+    const result = await fetchJSON<T>(url, { next: { revalidate: 3600 } });
+    const elapsed = Date.now() - started;
+    // if (elapsed > 2000) {
+    //   console.warn(`[gjson] Slow Google Books request (${elapsed}ms): ${url}`);
+    // }
+    return result;
   } catch (e) {
+    // if ((e as any).name === 'AbortError') {
+    //   console.error(`[gjson] Timeout: ${url}`);
+    // }
     if (e instanceof HttpError) throw new Error(`Books ${e.status}: ${e.body}`);
     throw e;
   }
