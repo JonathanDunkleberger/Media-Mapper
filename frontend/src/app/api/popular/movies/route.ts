@@ -14,8 +14,7 @@ const Query = z.object({
   genres: z.string().optional(),
 });
 
-const isStabilityMode = process.env.NEXT_PUBLIC_STABILITY_MODE === '1';
-export const runtime = isStabilityMode ? 'nodejs' : 'edge';
+export const runtime = 'nodejs';
 
 export const GET = createJsonRoute({
   schema: Query,
